@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"flag"
 	"strings"
 	"strconv"
 	"fmt"
@@ -14,17 +13,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	Token string
-)
 
-func init() {
-	flag.StringVar(&Token, "t", "", "Bot Token")
-	flag.Parse()
+func delete_empty (s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, str)
+		}
+	}
+	return r
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var results []string
+	//var results []string
 	
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
@@ -41,37 +42,65 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
 		log.Println(m.Content)
 		
-		results = strings.SplitAfter(m.Content, "h")
-		args := strings.SplitAfter(results[1], "/")
+		args := strings.SplitAfter(m.Content, "\"")
 
-		for i := range results {
-			results[i] = strings.TrimRight(results[i], " ")
+
+		for i := range args{
+			args[i] = strings.TrimRight(args[i], "\"")
+			args[i] = strings.TrimLeft(args[i], " ")
 		}
+		args = delete_empty(args)
+	
 
-		for i := range args {
-			args[i] = strings.TrimRight(args[i], "/")
-		}
-		fmt.Println(args[0], args[1], args[2])
-		fmt.Println(len(args))
-
-		if len(args) == 3 {
-			index, err := strconv.Atoi(args[2])
+		if len(args) == 4 {
+			index, err := strconv.Atoi(args[3])
+			if index == 0 {
+				index = 10
+			}
 			if err != nil {
 				log.Println(err)
-				s.ChannelMessageSend(m.ChannelID, "Error with index range, using default value of 50")
-				s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[0], args[1], 50, key))
 			}
-			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[0], args[1], index, key))
-		} else {
-			s.ChannelMessageSend(m.ChannelID, "Error with index range, using default value of 50")
-			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[0], args[1], 50, key))
+			
+
+			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[1], args[2], index, key))
+
+		}else if len(args) == 3 {
+			
+
+			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[1], args[2], 50, key))
+		}else {
+
+			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
+		}
+	}
+	if strings.HasPrefix(m.Content, "!spect") == true{
+		s.ChannelMessageSend(m.ChannelID, "```testing```")
+
+		log.Println(m.Content)
+
+		args := strings.SplitAfter(m.Content, "\"")
+
+
+		for i := range args{
+			args[i] = strings.TrimRight(args[i], "\"")
+			args[i] = strings.TrimLeft(args[i], " ")
+		}
+		args = delete_empty(args)
+
+		if len(args) == 2 {
+			log.Println(args)
+			_, sendMe := boosted.SpectGame(args[1], key)
+			for _, i := range sendMe{
+				//i = "```" + i + "```"
+				s.ChannelMessageSend(m.ChannelID, i)
+			}
+			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 		}
 	}
 
-
-
 	
 }
+
 
 func main() {
 	err := godotenv.Load("killerkeys.env")

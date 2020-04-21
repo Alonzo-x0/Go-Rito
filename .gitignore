@@ -1,2 +1,7 @@
 
 *.env
+isHeBoosted/sandbox.go
+playground.go
+*.txt
+*.pdf
+*.png
