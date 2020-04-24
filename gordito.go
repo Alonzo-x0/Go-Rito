@@ -11,6 +11,8 @@ import (
 	boosted "./isHeBoosted/lib"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"text/tabwriter"
+	"bytes"
 )
 
 
@@ -25,7 +27,9 @@ func delete_empty (s []string) []string {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	//var results []string
+	var b bytes.Buffer
+	w := tabwriter.NewWriter(&b, 1, 1, 1, ' ', 0)
+	
 	
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
@@ -74,7 +78,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	if strings.HasPrefix(m.Content, "!spect") == true{
-		s.ChannelMessageSend(m.ChannelID, "```testing```")
+		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 
 		log.Println(m.Content)
 
@@ -89,17 +93,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		if len(args) == 2 {
 			log.Println(args)
-			_, sendMe := boosted.SpectGame(args[1], key)
-			for _, i := range sendMe{
-				//i = "```" + i + "```"
-				s.ChannelMessageSend(m.ChannelID, i)
-			}
+			x, y := boosted.SpectGame(args[1], key)
+			fmt.Fprintln(w,"```" + x[0]+ "\t\t\t\t" + y[0] + "\n" + x[1] + "\t" + y[1] + "\n" + x[2] + "\t" + y[2] + "\n" + x[3] + "\t" + y[3] + "\n" + x[4]  +"\t" + y[4] + "```")
+			w.Flush()
+			
+			log.Println(b.String)
+			s.ChannelMessageSend(m.ChannelID, b.String())
+
+		} else if len(args) != 2{
+			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
+
 			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 		}
 	}
+}
 
 	
-}
+
 
 
 func main() {

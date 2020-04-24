@@ -34,6 +34,7 @@ func SpectGame(username string, key string) ([]string, []string) {
 	var enID, _ = getSummoner(username, key)
 	var url = "https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" + enID + "?api_key=" + key
 	var spect specMode
+	var whoops errSpec
 	var teamA []string
 	var teamB []string
 	var champA map[string]int
@@ -41,127 +42,173 @@ func SpectGame(username string, key string) ([]string, []string) {
 	var matchup map[string]string
 	var matchupB map[string]string
 	var error []string
+	var errors []string
 
-	err := json.Unmarshal(urlRequest(url), &spect)
+	err := json.Unmarshal(urlRequest(url), &whoops)
 
+	errors = append(errors,  "Error in SpectGame")
 	if err != nil {
 		log.Println(err)
 		error := append(error, "Error in SpectGame")
 		return error, error
+
 	}
+	fmt.Println(whoops.Status.StatusCode == 0)
+	if whoops.Status.StatusCode == 0 {
 
-
-	matchup = make(map[string]string)
-	champA = make(map[string]int)
-	champB = make(map[string]int)
-	matchupB = make(map[string]string)
-
-	for index, _ := range spect.Participants {
-		if spect.Participants[index].TeamID == 100 {
-			teamA = append(teamA, spect.Participants[index].SummonerName)
-		}else if spect.Participants[index].TeamID == 200 {
-			teamB = append(teamB, spect.Participants[index].SummonerName)
-	} }
-
-	for index, names := range teamA {
-		if spect.Participants[index].SummonerName == names {
-			champA[spect.Participants[index].SummonerName] = spect.Participants[index].ChampionID
+		err := json.Unmarshal(urlRequest(url), &spect)
+	
+		if err != nil {
+			log.Println(err)
+			error := append(error, "Error in SpectGame")
+			return error, error
 		}
-	}
-
-	for i, x := range champA {
-		matchup[i] = champFind(x)
-	}
-	var names []string
-	for k, _ := range matchup {
-		names = append(names, k)
-	} 
-	var summLen []int
-	for _, y := range names {
-		summLen = append(summLen, len(y))
-	}
-
-	sort.Sort(sort.Reverse(sort.IntSlice(summLen)))
-
-	var aTeam []string
- 
- 	for _, y := range names {
-		if len(y) != summLen[0] {
-			ghost := summLen[0]-len(y)
-			for k, v := range matchup {
-				if y == k {
-					aTeam = append(aTeam, y + strings.Repeat(" ", ghost) + " || " + v)
-
-				}
-			}
-		} else if len(y) == summLen[0] {
-			for k, v := range matchup {
-				if y == k {
-					aTeam = append(aTeam, y + " || " + v)
-				}
+	
+	
+		matchup = make(map[string]string)
+		champA = make(map[string]int)
+		champB = make(map[string]int)
+		matchupB = make(map[string]string)
+	
+		for index, _ := range spect.Participants {
+			if spect.Participants[index].TeamID == 100 {
+				teamA = append(teamA, spect.Participants[index].SummonerName)
+			}else if spect.Participants[index].TeamID == 200 {
+				teamB = append(teamB, spect.Participants[index].SummonerName)
+		} }
+	
+		for index, names := range teamA {
+			if spect.Participants[index].SummonerName == names {
+				champA[spect.Participants[index].SummonerName] = spect.Participants[index].ChampionID
 			}
 		}
-	}
-
-
-	for index, names := range teamB {
-
-		if spect.Participants[index+5].SummonerName == names {
-			fmt.Println(names)
-			champB[spect.Participants[index+5].SummonerName] = spect.Participants[index+5].ChampionID
+	
+		for i, x := range champA {
+			matchup[i] = champFind(x)
 		}
-	}
-
-	var namesB []string
-
-	for i, x := range champB {
-		fmt.Println(i)
-		matchupB[i] = champFind(x)
-	}
-	for k, _ := range matchupB {
-		namesB = append(namesB, k)
-	} 
-	var fuckerB []int
-	for _, y := range namesB {
-		fuckerB = append(fuckerB, len(y))
-	}
-
-	sort.Sort(sort.Reverse(sort.IntSlice(fuckerB)))
-
-	var bTeam []string
- 	for _, y := range namesB {
-
-		if len(y) != fuckerB[0] {
-			ghost := fuckerB[0]-len(y)
-			for k, v := range matchupB {
-				if y == k {
-					bTeam = append(bTeam, y + strings.Repeat(" ", ghost) + " || " + v)
+		var names []string
+		for k, _ := range matchup {
+			names = append(names, k)
+		} 
+		var summLen []int
+		for _, y := range names {
+			summLen = append(summLen, len(y))
+		}
+	
+		sort.Sort(sort.Reverse(sort.IntSlice(summLen)))
+	
+		var aTeam []string
+	 
+		for _, y := range names {
+			if len(y) != summLen[0] {
+				ghost := summLen[0]-len(y)
+				for k, v := range matchup {
+					if y == k {
+						aTeam = append(aTeam, y + strings.Repeat(" ", ghost) + " | " + v)
+	
+					}
 				}
-			}
-		} else if len(y) == fuckerB[0] {
-			for k, v := range matchupB {
-				if y == k {
-					bTeam = append(bTeam, y + " || " + v)
+			} else if len(y) == summLen[0] {
+				for k, v := range matchup {
+					if y == k {
+						aTeam = append(aTeam, y + " | " + v)
+					}
 				}
 			}
 		}
+	
+	
+		for index, names := range teamB {
+	
+			if spect.Participants[index+5].SummonerName == names {
+				////fmt.Println(names)
+				champB[spect.Participants[index+5].SummonerName] = spect.Participants[index+5].ChampionID
+			}
+		}
+	
+		var namesB []string
+	
+		for i, x := range champB {
+			////fmt.Println(i)
+			matchupB[i] = champFind(x)
+		}
+		for k, _ := range matchupB {
+			namesB = append(namesB, k)
+		} 
+		var fuckerB []int
+		for _, y := range namesB {
+			fuckerB = append(fuckerB, len(y))
+		}
+	
+		sort.Sort(sort.Reverse(sort.IntSlice(fuckerB)))
+	
+		var bTeam []string
+		for _, y := range namesB {
+	
+			if len(y) != fuckerB[0] {
+				ghost := fuckerB[0]-len(y)
+				for k, v := range matchupB {
+					if y == k {
+						bTeam = append(bTeam, y + strings.Repeat(" ", ghost) + " || " + v)
+					}
+				}
+			} else if len(y) == fuckerB[0] {
+				for k, v := range matchupB {
+					if y == k {
+						bTeam = append(bTeam, y + " || " + v)
+					}
+				}
+			}
+		}
+	 
+		return aTeam, bTeam
+	} else if whoops.Status.StatusCode != 0{
+		log.Println(whoops.Status.Message)
+		return  errors, errors
 	}
- 
-	return aTeam, bTeam
+	
+	return errors, errors
 }
 
-func urlRequest(url string) []byte{
-	//simple request function returns response body
-	resp, err := http.Get(url)
+func checkTeam(gameList int64, key string) ([]string, []string){
+	var url = "https://na1.api.riotgames.com/lol/match/v4/matches/" + strconv.FormatInt(gameList, 10) + "?api_key=" + key
+	var matchinfo matchINFO
+	var loserID []int
+	var winnerID []int
+	var winnerName []string
+	var loserName [] string
+	//var loseID  []int
+	err := json.Unmarshal(urlRequest(url), &matchinfo)
 	if err != nil {
-		log.Fatalln(err)
-}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
+		//log.Println(err)
 	}
-	return body
+	//fmt.Println(matchinfo.Participants[0].Stats.Win)
+
+	for x, _ := range matchinfo.Participants {
+		if matchinfo.Participants[x].Stats.Win == false{
+			//fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a loser")
+			loserID = append(loserID, matchinfo.ParticipantIdentities[x].ParticipantID)
+		}else {
+			//fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a winner")
+			winnerID = append(winnerID, matchinfo.ParticipantIdentities[x].ParticipantID)
+
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		for _, y := range winnerID {
+			if matchinfo.ParticipantIdentities[i].ParticipantID == y{
+				winnerName = append(winnerName, matchinfo.ParticipantIdentities[i].Player.SummonerName)
+			} else {
+				loserName = append(loserName, matchinfo.ParticipantIdentities[i].Player.SummonerName)
+			}	
+		}
+	}
+
+	return winnerName, loserName
+
 }
+
 func dumpMap(space string, m map[string]interface{}) {
 	for k, v := range m {
 		if mv, ok := v.(map[string]interface{}); ok {
@@ -397,20 +444,8 @@ type matchINFO struct {
 			PickTurn   int `json:"pickTurn"`
 			ChampionID int `json:"championId"`
 		} `json:"bans"`
-		FirstInhibitor       bool   `json:"firstInhibitor"`
 		Win                  string `json:"win"`
-		FirstRiftHerald      bool   `json:"firstRiftHerald"`
-		FirstBaron           bool   `json:"firstBaron"`
-		BaronKills           int    `json:"baronKills"`
-		RiftHeraldKills      int    `json:"riftHeraldKills"`
-		FirstBlood           bool   `json:"firstBlood"`
 		TeamID               int    `json:"teamId"`
-		FirstTower           bool   `json:"firstTower"`
-		VilemawKills         int    `json:"vilemawKills"`
-		InhibitorKills       int    `json:"inhibitorKills"`
-		TowerKills           int    `json:"towerKills"`
-		DominionVictoryScore int    `json:"dominionVictoryScore"`
-		DragonKills          int    `json:"dragonKills"`
 	} `json:"teams"`
 	Participants []struct {
 		Spell1ID      int `json:"spell1Id"`
@@ -423,104 +458,11 @@ type matchINFO struct {
 		Spell2ID int `json:"spell2Id"`
 		TeamID   int `json:"teamId"`
 		Stats    struct {
-			NeutralMinionsKilledTeamJungle  int  `json:"neutralMinionsKilledTeamJungle"`
-			VisionScore                     int  `json:"visionScore"`
-			MagicDamageDealtToChampions     int  `json:"magicDamageDealtToChampions"`
-			LargestMultiKill                int  `json:"largestMultiKill"`
-			TotalTimeCrowdControlDealt      int  `json:"totalTimeCrowdControlDealt"`
-			LongestTimeSpentLiving          int  `json:"longestTimeSpentLiving"`
-			Perk1Var1                       int  `json:"perk1Var1"`
-			Perk1Var3                       int  `json:"perk1Var3"`
-			Perk1Var2                       int  `json:"perk1Var2"`
-			TripleKills                     int  `json:"tripleKills"`
-			Perk5                           int  `json:"perk5"`
-			Perk4                           int  `json:"perk4"`
-			PlayerScore9                    int  `json:"playerScore9"`
-			PlayerScore8                    int  `json:"playerScore8"`
 			Kills                           int  `json:"kills"`
-			PlayerScore1                    int  `json:"playerScore1"`
-			PlayerScore0                    int  `json:"playerScore0"`
-			PlayerScore3                    int  `json:"playerScore3"`
-			PlayerScore2                    int  `json:"playerScore2"`
-			PlayerScore5                    int  `json:"playerScore5"`
-			PlayerScore4                    int  `json:"playerScore4"`
-			PlayerScore7                    int  `json:"playerScore7"`
-			PlayerScore6                    int  `json:"playerScore6"`
-			Perk5Var1                       int  `json:"perk5Var1"`
-			Perk5Var3                       int  `json:"perk5Var3"`
-			Perk5Var2                       int  `json:"perk5Var2"`
-			TotalScoreRank                  int  `json:"totalScoreRank"`
-			NeutralMinionsKilled            int  `json:"neutralMinionsKilled"`
-			StatPerk1                       int  `json:"statPerk1"`
-			StatPerk0                       int  `json:"statPerk0"`
-			DamageDealtToTurrets            int  `json:"damageDealtToTurrets"`
-			PhysicalDamageDealtToChampions  int  `json:"physicalDamageDealtToChampions"`
-			DamageDealtToObjectives         int  `json:"damageDealtToObjectives"`
-			Perk2Var2                       int  `json:"perk2Var2"`
-			Perk2Var3                       int  `json:"perk2Var3"`
-			TotalUnitsHealed                int  `json:"totalUnitsHealed"`
-			Perk2Var1                       int  `json:"perk2Var1"`
-			Perk4Var1                       int  `json:"perk4Var1"`
-			TotalDamageTaken                int  `json:"totalDamageTaken"`
-			Perk4Var3                       int  `json:"perk4Var3"`
-			WardsKilled                     int  `json:"wardsKilled"`
-			LargestCriticalStrike           int  `json:"largestCriticalStrike"`
-			LargestKillingSpree             int  `json:"largestKillingSpree"`
-			QuadraKills                     int  `json:"quadraKills"`
-			MagicDamageDealt                int  `json:"magicDamageDealt"`
-			Item2                           int  `json:"item2"`
-			Item3                           int  `json:"item3"`
-			Item0                           int  `json:"item0"`
-			Item1                           int  `json:"item1"`
-			Item6                           int  `json:"item6"`
-			Item4                           int  `json:"item4"`
-			Item5                           int  `json:"item5"`
-			Perk1                           int  `json:"perk1"`
-			Perk0                           int  `json:"perk0"`
-			Perk3                           int  `json:"perk3"`
-			Perk2                           int  `json:"perk2"`
-			Perk3Var3                       int  `json:"perk3Var3"`
-			Perk3Var2                       int  `json:"perk3Var2"`
-			Perk3Var1                       int  `json:"perk3Var1"`
-			DamageSelfMitigated             int  `json:"damageSelfMitigated"`
-			MagicalDamageTaken              int  `json:"magicalDamageTaken"`
-			Perk0Var2                       int  `json:"perk0Var2"`
-			TrueDamageTaken                 int  `json:"trueDamageTaken"`
-			Assists                         int  `json:"assists"`
-			Perk4Var2                       int  `json:"perk4Var2"`
-			GoldSpent                       int  `json:"goldSpent"`
-			TrueDamageDealt                 int  `json:"trueDamageDealt"`
 			ParticipantID                   int  `json:"participantId"`
-			PhysicalDamageDealt             int  `json:"physicalDamageDealt"`
-			SightWardsBoughtInGame          int  `json:"sightWardsBoughtInGame"`
-			TotalDamageDealtToChampions     int  `json:"totalDamageDealtToChampions"`
-			PhysicalDamageTaken             int  `json:"physicalDamageTaken"`
-			TotalPlayerScore                int  `json:"totalPlayerScore"`
 			Win                             bool `json:"win"`
-			ObjectivePlayerScore            int  `json:"objectivePlayerScore"`
-			TotalDamageDealt                int  `json:"totalDamageDealt"`
-			NeutralMinionsKilledEnemyJungle int  `json:"neutralMinionsKilledEnemyJungle"`
 			Deaths                          int  `json:"deaths"`
-			WardsPlaced                     int  `json:"wardsPlaced"`
-			PerkPrimaryStyle                int  `json:"perkPrimaryStyle"`
-			PerkSubStyle                    int  `json:"perkSubStyle"`
-			TurretKills                     int  `json:"turretKills"`
-			TrueDamageDealtToChampions      int  `json:"trueDamageDealtToChampions"`
-			GoldEarned                      int  `json:"goldEarned"`
-			KillingSprees                   int  `json:"killingSprees"`
-			UnrealKills                     int  `json:"unrealKills"`
-			ChampLevel                      int  `json:"champLevel"`
-			DoubleKills                     int  `json:"doubleKills"`
-			InhibitorKills                  int  `json:"inhibitorKills"`
-			Perk0Var1                       int  `json:"perk0Var1"`
-			CombatPlayerScore               int  `json:"combatPlayerScore"`
-			Perk0Var3                       int  `json:"perk0Var3"`
-			VisionWardsBoughtInGame         int  `json:"visionWardsBoughtInGame"`
-			PentaKills                      int  `json:"pentaKills"`
-			TotalHeal                       int  `json:"totalHeal"`
-			TotalMinionsKilled              int  `json:"totalMinionsKilled"`
-			TimeCCingOthers                 int  `json:"timeCCingOthers"`
-			StatPerk2                       int  `json:"statPerk2"`
+
 		} `json:"stats"`
 		ChampionID int `json:"championId"`
 	} `json:"participants"`
