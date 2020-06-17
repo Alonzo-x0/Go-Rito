@@ -14,7 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"text/tabwriter"
 	"bytes"
-	"reflect"
+	"time"
 )
 
 
@@ -28,9 +28,21 @@ func delete_empty (s []string) []string {
 	return r
 }
 
+
+//func trackMessages(s *discordgo.Session, m *discordgo.State) {
+	//m.MaxMessageCount = 50
+//}
+
+
+
 func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
-	log.Println(m.Author, "here")
-	s.ChannelMessageSend(m.ChannelID, "A message was deleted")
+	//
+	disect := m.BeforeDelete
+	log.Println(disect)
+	time.Sleep(3 * time.Minute)
+	message := disect.Content + " sent by @" + disect.Author.String() + " was deleted."
+	log.Println(message)
+	s.ChannelMessageSend(m.ChannelID, message)
 
 }
 
@@ -46,9 +58,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	key := os.Getenv("APIkey")
 
 	if m.Author.ID == s.State.User.ID {
+		time.Sleep(3 * time.Minute)
+		s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
+		//log.Println(m.Message.ID)
 		return
 	}
+
+
+
 	log.Println(m.Content)
+
 
 	if strings.HasPrefix(m.Content, "!time") == true {
 		
@@ -158,9 +177,16 @@ func main() {
 		fmt.Println(err)
 		return 
 	}
+	//dg.AddHandler(trackMessages)
 	dg.AddHandler(messageDelete)
 	dg.AddHandler(messageCreate)
 	
+	//var kms discordgo.State
+	dg.State.MaxMessageCount = 50
+
+	discordgo.NewState()
+
+
 	err1 := dg.Open()
 
 	if err1 != nil {
