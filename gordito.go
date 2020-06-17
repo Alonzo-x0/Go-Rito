@@ -9,10 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 	boosted "./isHeBoosted/lib"
+	//weather "./weather/lib"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"text/tabwriter"
 	"bytes"
+	"reflect"
 )
 
 
@@ -26,10 +28,16 @@ func delete_empty (s []string) []string {
 	return r
 }
 
+func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
+	log.Println(m.Author, "here")
+	s.ChannelMessageSend(m.ChannelID, "A message was deleted")
+
+}
+
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var b bytes.Buffer
 	w := tabwriter.NewWriter(&b, 1, 1, 1, ' ', 0)
-	
 	
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
@@ -40,11 +48,32 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	log.Println(m.Content)
+
+	if strings.HasPrefix(m.Content, "!time") == true {
+		
+
+		s.ChannelMessageSend(m.ChannelID, "Hol' up")
+		
+		args := strings.SplitAfter(m.Content, " ")
+		t, _ := discordgo.SnowflakeTimestamp(args[1])
+		
+		t.String()
+		f := t.Format("2006-01-02 15:04:05")
+		log.Println(f)
+
+		message := fmt.Sprintf("This message was sent at %s", f)
+
+		s.ChannelMessageSend(m.ChannelID, message)
 
 
+		
+	}
+
+	//!search "booster" "boostee"
 	if strings.HasPrefix(m.Content, "!search") == true{
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
-		log.Println(m.Content)
+		
 		
 		args := strings.SplitAfter(m.Content, "\"")
 
@@ -77,10 +106,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
 		}
 	}
+	//!spect "player"
 	if strings.HasPrefix(m.Content, "!spect") == true{
 		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 
-		log.Println(m.Content)
+		
 
 		args := strings.SplitAfter(m.Content, "\"")
 
@@ -94,13 +124,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if len(args) == 2 {
 			log.Println(args)
 			x, y := boosted.SpectGame(args[1], key)
-			fmt.Fprintln(w,"```" + x[0]+ "\t\t\t\t" + y[0] + "\n" + x[1] + "\t" + y[1] + "\n" + x[2] + "\t" + y[2] + "\n" + x[3] + "\t" + y[3] + "\n" + x[4]  +"\t" + y[4] + "```")
-			w.Flush()
-			
-			log.Println(b.String)
-			s.ChannelMessageSend(m.ChannelID, b.String())
+			if y[0] != "" {
 
-		} else if len(args) != 2{
+				fmt.Fprintln(w,"```" + x[0]+ "\t\t\t\t" + y[0] + "\n" + x[1] + "\t" + y[1] + "\n" + x[2] + "\t" + y[2] + "\n" + x[3] + "\t" + y[3] + "\n" + x[4]  +"\t" + y[4] + "```")
+				w.Flush()
+				
+				log.Println(b.String)
+				s.ChannelMessageSend(m.ChannelID, b.String())
+			}
+
+		} else {
 			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
 
 			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
@@ -125,10 +158,11 @@ func main() {
 		fmt.Println(err)
 		return 
 	}
-
+	dg.AddHandler(messageDelete)
 	dg.AddHandler(messageCreate)
 	
 	err1 := dg.Open()
+
 	if err1 != nil {
 		fmt.Println(err1)
 		return 

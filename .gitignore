@@ -5,3 +5,5 @@ playground.go
 *.txt
 *.pdf
 *.png
+weather/lib/conditions.json
+weather/lib/post.json

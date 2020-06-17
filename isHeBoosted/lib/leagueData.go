@@ -31,7 +31,13 @@ func champFind(ID int) string{
 }
 
 func SpectGame(username string, key string) ([]string, []string) {
-	var enID, _ = getSummoner(username, key)
+	var enID, v = getSummoner(username, key)
+	var errors []string
+	errors = append(errors,  "Error in SpectGame")
+	if v == "" {
+		errors = append(errors, "")
+		return errors, errors
+	}
 	var url = "https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" + enID + "?api_key=" + key
 	var spect specMode
 	var whoops errSpec
@@ -42,11 +48,10 @@ func SpectGame(username string, key string) ([]string, []string) {
 	var matchup map[string]string
 	var matchupB map[string]string
 	var error []string
-	var errors []string
 
 	err := json.Unmarshal(urlRequest(url), &whoops)
 
-	errors = append(errors,  "Error in SpectGame")
+	
 	if err != nil {
 		log.Println(err)
 		error := append(error, "Error in SpectGame")
@@ -149,13 +154,13 @@ func SpectGame(username string, key string) ([]string, []string) {
 				ghost := fuckerB[0]-len(y)
 				for k, v := range matchupB {
 					if y == k {
-						bTeam = append(bTeam, y + strings.Repeat(" ", ghost) + " || " + v)
+						bTeam = append(bTeam, y + strings.Repeat(" ", ghost) + " | " + v)
 					}
 				}
 			} else if len(y) == fuckerB[0] {
 				for k, v := range matchupB {
 					if y == k {
-						bTeam = append(bTeam, y + " || " + v)
+						bTeam = append(bTeam, y + " | " + v)
 					}
 				}
 			}
@@ -180,7 +185,7 @@ func checkTeam(gameList int64, key string) ([]string, []string){
 	//var loseID  []int
 	err := json.Unmarshal(urlRequest(url), &matchinfo)
 	if err != nil {
-		//log.Println(err)
+		log.Println(err)
 	}
 	//fmt.Println(matchinfo.Participants[0].Stats.Win)
 
@@ -333,47 +338,6 @@ func getMatchID(enID string, key string) (string) {
 	return "you should not be seeing this."
 	}
 }
-
-func checkTeam(gameList int64, key string) ([]string, []string){
-	var url = "https://na1.api.riotgames.com/lol/match/v4/matches/" + strconv.FormatInt(gameList, 10) + "?api_key=" + key
-	var matchinfo matchINFO
-	var loserID []int
-	var winnerID []int
-	var winnerName []string
-	var loserName [] string
-	//var loseID  []int
-	err := json.Unmarshal(urlRequest(url), &matchinfo)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(matchinfo.Participants[0].Stats.Win)
-
-	for x, _ := range matchinfo.Participants {
-		if matchinfo.Participants[x].Stats.Win == false{
-			fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a loser")
-			loserID = append(loserID, matchinfo.ParticipantIdentities[x].ParticipantID)
-		}else {
-			fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a winner")
-			winnerID = append(winnerID, matchinfo.ParticipantIdentities[x].ParticipantID)
-
-		}
-	}
-
-	for i := 0; i < 10; i++ {
-		for _, y := range winnerID {
-			if matchinfo.ParticipantIdentities[i].ParticipantID == y{
-				winnerName = append(winnerName, matchinfo.ParticipantIdentities[i].Player.SummonerName)
-			} else {
-				loserName = append(loserName, matchinfo.ParticipantIdentities[i].Player.SummonerName)
-			}	
-		}
-	}
-
-	return winnerName, loserName
-
-}
-
-
  
 func UsrSearch(booster string, boostee string, indexMax int, key string) string{
 	var url string
@@ -385,9 +349,11 @@ func UsrSearch(booster string, boostee string, indexMax int, key string) string{
 	
 
 	if accID == "" {
+		log.Println("fuckup in usrsearch")
 		log.Println(whoops)
 		return whoops
 	}
+	log.Println("fuckup in usrsearch")
 	var gameList = gameCount(accID, indexMax, key)
 
 	for _, p := range gameList {
@@ -413,7 +379,18 @@ func UsrSearch(booster string, boostee string, indexMax int, key string) string{
 	return output
 } 
 
-
+func urlRequest(url string) []byte{
+	//simple request function returns response body
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalln(err)
+}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return body
+}
 
 
 type matchINFO struct {
