@@ -15,6 +15,7 @@ import (
 	"text/tabwriter"
 	"bytes"
 	"time"
+	"reflect"
 )
 
 
@@ -29,22 +30,23 @@ func delete_empty (s []string) []string {
 }
 
 
-//func trackMessages(s *discordgo.Session, m *discordgo.State) {
-	//m.MaxMessageCount = 50
-//}
-
-
-
 func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	//
 	disect := m.BeforeDelete
-	log.Println(disect)
-	time.Sleep(3 * time.Minute)
-	message := disect.Content + " sent by @" + disect.Author.String() + " was deleted."
-	log.Println(message)
-	s.ChannelMessageSend(m.ChannelID, message)
+	
+	if disect != nil {
+		time.Sleep(1 * time.Second)	
 
+		if disect.Author.Bot == false {
+			message := disect.Content + " sent by @" + disect.Author.String() + " was deleted."
+			log.Println(disect.Content)
+			log.Println(message)
+			s.ChannelMessageSend(m.ChannelID, message)
+		}
+	}
+	
 }
+
 
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -60,31 +62,63 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		time.Sleep(3 * time.Minute)
 		s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
-		//log.Println(m.Message.ID)
+		log.Println("deletion here")
 		return
 	}
 
+	var embedded discordgo.MessageEmbed
+	embedded.URL = "https://github.com/Alonzo-x0/Go-Rito"
 
-
-	log.Println(m.Content)
+	killmepls := func(s *discordgo.Session, y *discordgo.GuildMembersChunk) {
+	count := 0
+	log.Println(y.Presences[0].Status)
+	for p, _ := range y.Presences{
+		if y.Presences[p].Status == "online" {
+			count++
+		}
+	}
+	log.Println(reflect.TypeOf(count))
+	time.Sleep(1 * time.Second)
+	testing := fmt.Sprintf("%i homies are online", count)
+	
+	s.ChannelMessageSend(m.ChannelID, testing)
+	
+	log.Println(count, " homies are online")	
+	}
+	if strings.HasPrefix(m.Content, "!test") == true {
+		s.AddHandler(killmepls)
+		f := s.RequestGuildMembers(m.GuildID, "", 0, true)
+		
+		if f != nil {
+			log.Println(err)
+			
+		}
+	}
 
 
 	if strings.HasPrefix(m.Content, "!time") == true {
 		
 
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
-		
+		log.Println(m.Content, "HERE")
 		args := strings.SplitAfter(m.Content, " ")
 		t, _ := discordgo.SnowflakeTimestamp(args[1])
 		
 		t.String()
-		f := t.Format("2006-01-02 15:04:05")
-		log.Println(f)
+		stamp := t.Format("2006-01-02 15:04:05")
 
-		message := fmt.Sprintf("This message was sent at %s", f)
 
-		s.ChannelMessageSend(m.ChannelID, message)
+		mValue, _ := s.ChannelMessage(m.ChannelID, args[1])
 
+		log.Println(mValue.Content)
+		time.Sleep(5 & time.Second)
+
+		embedded.Title = "Time Stamp"
+
+		message := fmt.Sprintf("%s | was sent at %s EST", mValue.Content, stamp)
+		embedded.Description = message
+		
+		s.ChannelMessageSendEmbed(m.ChannelID, &embedded)
 
 		
 	}
@@ -173,17 +207,19 @@ func main() {
 
 	dg, err := discordgo.New("Bot " + discToken)
 	
+	log.Println(reflect.TypeOf(dg))
 	if err != nil {
 		fmt.Println(err)
 		return 
 	}
-	//dg.AddHandler(trackMessages)
-	dg.AddHandler(messageDelete)
+
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
+
 	dg.AddHandler(messageCreate)
 	
-	//var kms discordgo.State
-	dg.State.MaxMessageCount = 50
+	
 
+	dg.State.MaxMessageCount = 50
 	discordgo.NewState()
 
 
@@ -203,3 +239,4 @@ func main() {
 	dg.Close()
 	//messageCreate()
 }
+
