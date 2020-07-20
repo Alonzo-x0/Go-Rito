@@ -8,72 +8,63 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"strconv"
-	//"github.com/joho/godotenv"
-	//"os"
+
 	"sort"
 	"time"
-	//"github.com/pkg/profile"
+	"errors"
 )
 
 
-func champFind(ID int) string{
+func champFind(ID int) (string, error){
 	welcome, err := UnmarshalWelcome(urlRequest("http://ddragon.leagueoflegends.com/cdn/10.8.1/data/en_US/champion.json"))
 	if err != nil {
-			log.Println(err) 
+		return "", err
 		}	
 	for k, _ := range welcome.Data {
 		if welcome.Data[k].Key == strconv.Itoa(ID) {
-			return k
+			return k, err
 		}
 	}
 
-	return "FUCK UP"
+	return "", err
 }
 
-func SpectGame(username string, key string) ([]string, []string) {
-	var enID, v = getSummoner(username, key)
-	var errors []string
-	errors = append(errors,  "Error in SpectGame")
-	if v == "" {
-		errors = append(errors, "")
-		return errors, errors
+func SpectGame(username string, key string) ([]string, []string, error) {
+	var enID, _, err = getSummoner(username, key)
+	var mistake []string
+	
+	if err != nil {
+		return mistake, mistake, err
 	}
+
 	var url = "https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" + enID + "?api_key=" + key
 	var spect specMode
 	var whoops errSpec
-	var teamA []string
-	var teamB []string
-	var champA map[string]int
-	var champB map[string]int
-	var matchup map[string]string
-	var matchupB map[string]string
-	var error []string
+	var teamA, teamB []string
+	var champA, champB map[string]int
+	var matchupA, matchupB map[string]string
 
-	err := json.Unmarshal(urlRequest(url), &whoops)
+	err = json.Unmarshal(urlRequest(url), &whoops)
 
 	
 	if err != nil {
-		log.Println(err)
-		error := append(error, "Error in SpectGame")
-		return error, error
+		return mistake, mistake, err
 
 	}
-	fmt.Println(whoops.Status.StatusCode == 0)
-	if whoops.Status.StatusCode == 0 {
 
+	if whoops.Status.StatusCode == 0 {
 		err := json.Unmarshal(urlRequest(url), &spect)
 	
 		if err != nil {
-			log.Println(err)
-			error := append(error, "Error in SpectGame")
-			return error, error
+			return mistake, mistake, err
 		}
 	
 	
-		matchup = make(map[string]string)
+		matchupA = make(map[string]string)
+		matchupB = make(map[string]string)
 		champA = make(map[string]int)
 		champB = make(map[string]int)
-		matchupB = make(map[string]string)
+		
 	
 		for index, _ := range spect.Participants {
 			if spect.Participants[index].TeamID == 100 {
@@ -88,11 +79,12 @@ func SpectGame(username string, key string) ([]string, []string) {
 			}
 		}
 	
+
 		for i, x := range champA {
-			matchup[i] = champFind(x)
+			matchupA[i], _ = champFind(x)
 		}
 		var names []string
-		for k, _ := range matchup {
+		for k, _ := range matchupA {
 			names = append(names, k)
 		} 
 		var summLen []int
@@ -107,14 +99,14 @@ func SpectGame(username string, key string) ([]string, []string) {
 		for _, y := range names {
 			if len(y) != summLen[0] {
 				ghost := summLen[0]-len(y)
-				for k, v := range matchup {
+				for k, v := range matchupA {
 					if y == k {
 						aTeam = append(aTeam, y + strings.Repeat(" ", ghost) + " | " + v)
 	
 					}
 				}
 			} else if len(y) == summLen[0] {
-				for k, v := range matchup {
+				for k, v := range matchupA {
 					if y == k {
 						aTeam = append(aTeam, y + " | " + v)
 					}
@@ -135,7 +127,7 @@ func SpectGame(username string, key string) ([]string, []string) {
 	
 		for i, x := range champB {
 			////fmt.Println(i)
-			matchupB[i] = champFind(x)
+			matchupB[i], _ = champFind(x)
 		}
 		for k, _ := range matchupB {
 			namesB = append(namesB, k)
@@ -166,13 +158,13 @@ func SpectGame(username string, key string) ([]string, []string) {
 			}
 		}
 	 
-		return aTeam, bTeam
+		return aTeam, bTeam, err
 	} else if whoops.Status.StatusCode != 0{
-		log.Println(whoops.Status.Message)
-		return  errors, errors
+		err = errors.New(whoops.Status.Message)
+		return  mistake, mistake, err
 	}
 	
-	return errors, errors
+	return mistake, mistake, err
 }
 
 func checkTeam(gameList int64, key string) ([]string, []string){
@@ -182,19 +174,16 @@ func checkTeam(gameList int64, key string) ([]string, []string){
 	var winnerID []int
 	var winnerName []string
 	var loserName [] string
-	//var loseID  []int
+
 	err := json.Unmarshal(urlRequest(url), &matchinfo)
 	if err != nil {
 		log.Println(err)
 	}
-	//fmt.Println(matchinfo.Participants[0].Stats.Win)
 
 	for x, _ := range matchinfo.Participants {
 		if matchinfo.Participants[x].Stats.Win == false{
-			//fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a loser")
 			loserID = append(loserID, matchinfo.ParticipantIdentities[x].ParticipantID)
 		}else {
-			//fmt.Println(matchinfo.ParticipantIdentities[x].Player.SummonerName, "  is a winner")
 			winnerID = append(winnerID, matchinfo.ParticipantIdentities[x].ParticipantID)
 
 		}
@@ -227,37 +216,34 @@ func dumpMap(space string, m map[string]interface{}) {
 }
 
 
-func getSummoner(name string, key string) (string, string){
+func getSummoner(name string, key string) (string, string, error){
 	//id=encryptedID accountid=encryptedaccountid
 	var url = "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/" + name + "?api_key=" + key
 	var summoner Summoner
 	var error errSpec
-	fmt.Println(url)
-
-
-
+	log.Println(url)
 
 	err := json.Unmarshal(urlRequest(url), &error)
 	if err != nil {
-		log.Println(err)
+		return "Error", "", err
 	}
+
 	var erMessage = error.Status.Message
 
-	if erMessage == ""{
-		err := json.Unmarshal(urlRequest(url), &summoner)
-		
-		if err != nil {
-			log.Println(err)
-			return "Error, check logs", ""
-		}
-
-		enID := summoner.ID
-		accID := summoner.AccountID
-		return enID, accID
+	if erMessage != ""{
+		return "", "", err
 	}
 
-	log.Println("Error in getSummoner: ", error.Status.StatusCode)
-	return erMessage, ""
+	err = json.Unmarshal(urlRequest(url), &summoner)	
+	
+	if err != nil {
+		return "", "", err
+	}
+
+	enID := summoner.ID
+	accID := summoner.AccountID
+	return enID, accID, err
+	
 }
 
 
@@ -282,29 +268,42 @@ func freqCount(list []string) map[string]int{
 
 func gameCount(accID string, max int, key string) []int64{
 	var IDs []int64
-	//var ratio []string
-	
-	var url = "https://na1.api.riotgames.com/lol/match/v4/matchlists/by-account/" + accID + "?queue=420&endIndex="+ strconv.Itoa(max) + "&api_key=" + key
+	var error errSpec
 	var history matchHistory
-	var index int
-	
+	var index int	
+	var url = "https://na1.api.riotgames.com/lol/match/v4/matchlists/by-account/" + accID + "?queue=420&endIndex="+ strconv.Itoa(max) + "&api_key=" + key
 
-	err := json.Unmarshal(urlRequest(url), &history)
+	log.Println(url)
+
+	err := json.Unmarshal(urlRequest(url), &error)
 	if err != nil {
+		log.Println("error unmarshalling to error")
 		log.Println(err)
 	}
-	//finds out max amount of recorded matches and uses the the max if the number provided is too high
-	for x, _ := range history.Matches {
-		index = x
-	}
 
-	for i:=0; i <=index; i++ {
-		IDs = append(IDs, history.Matches[i].GameID)		
-	}
-
-
+	if error.Status.Message != "" {
+		log.Println(error.Status.Message)
 	
+	}else if error.Status.Message == "" {
+
+		err = json.Unmarshal(urlRequest(url), &history)
+		if err != nil {
+			log.Println("error parsing gameCount")
+			log.Println(err)
+
+			
+		}
+		//finds out max amount of recorded matches and uses the the max if the number provided is too high
+		for x, _ := range history.Matches {
+			index = x
+		}
+		for i:=0; i <=index; i++ {
 	
+			IDs = append(IDs, history.Matches[i].GameID)		
+		}
+	
+		return IDs
+	}
 	return IDs
 } 
 
@@ -339,35 +338,30 @@ func getMatchID(enID string, key string) (string) {
 	}
 }
  
-func UsrSearch(booster string, boostee string, indexMax int, key string) string{
+func UsrSearch(booster string, boostee string, indexMax int, key string) (string, error){
 	var url string
 	var matchinfo matchINFO
 	recent := 0
 	start := time.Now()
 
-	var whoops, accID = getSummoner(boostee, key)
+	_, accID, err := getSummoner(boostee, key)
 	
 
-	if accID == "" {
-		log.Println("fuckup in usrsearch")
-		log.Println(whoops)
-		return whoops
+	if err != nil {
+		return "", err
 	}
-	log.Println("fuckup in usrsearch")
 	var gameList = gameCount(accID, indexMax, key)
 
 	for _, p := range gameList {
 		url = "https://na1.api.riotgames.com/lol/match/v4/matches/" + strconv.FormatInt(p, 10) + "?api_key=" + key
 		err := json.Unmarshal(urlRequest(url), &matchinfo)
+
 		if err != nil {
-			log.Println(err)
-			//return err
+			return "", err
 		}
 		for i := 0; i < 10; i++ {
 			if strings.ToLower(matchinfo.ParticipantIdentities[i].Player.SummonerName) == strings.ToLower(booster) {
-				//fmt.Println(booster, " is in match: ", p)
 				recent = recent+1	
-				//fmt.Println(recent)
 			}
 		}
 	}
@@ -376,11 +370,10 @@ func UsrSearch(booster string, boostee string, indexMax int, key string) string{
 	output := "Looking through " + boostee + " match history and found " + booster + " in " + strconv.Itoa(recent) + " out of " + strconv.Itoa(indexMax) + " games"
 	log.Println(output)
 	log.Println("usrsearch took ", elapsed)
-	return output
+	return output, err
 } 
 
 func urlRequest(url string) []byte{
-	//simple request function returns response body
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalln(err)
@@ -494,71 +487,21 @@ func (r *Welcome) Marshal() ([]byte, error) {
 }
 
 type Welcome struct {
-	Type    Type             `json:"type"`   
 	Format  string           `json:"format"` 
-	Version Version          `json:"version"`
 	Data    map[string]Datum `json:"data"`   
 }
 
 type Datum struct {
-	Version Version            `json:"version"`
 	ID      string             `json:"id"`     
 	Key     string             `json:"key"`    
 	Name    string             `json:"name"`   
 	Title   string             `json:"title"`  
 	Blurb   string             `json:"blurb"`  
-	Info    Info               `json:"info"`   
-	Image   Image              `json:"image"`  
-	Tags    []Tag              `json:"tags"`   
 	Partype string             `json:"partype"`
 	Stats   map[string]float64 `json:"stats"`  
 }
 
-type Image struct {
-	Full   string `json:"full"`  
-	Sprite Sprite `json:"sprite"`
-	Group  Type   `json:"group"` 
-	X      int64  `json:"x"`     
-	Y      int64  `json:"y"`     
-	W      int64  `json:"w"`     
-	H      int64  `json:"h"`     
-}
 
-type Info struct {
-	Attack     int64 `json:"attack"`    
-	Defense    int64 `json:"defense"`   
-	Magic      int64 `json:"magic"`     
-	Difficulty int64 `json:"difficulty"`
-}
-
-type Type string
-const (
-	Champion Type = "champion"
-)
-
-type Sprite string
-const (
-	Champion0PNG Sprite = "champion0.png"
-	Champion1PNG Sprite = "champion1.png"
-	Champion2PNG Sprite = "champion2.png"
-	Champion3PNG Sprite = "champion3.png"
-	Champion4PNG Sprite = "champion4.png"
-)
-
-type Tag string
-const (
-	Assassin Tag = "Assassin"
-	Fighter Tag = "Fighter"
-	Mage Tag = "Mage"
-	Marksman Tag = "Marksman"
-	Support Tag = "Support"
-	Tank Tag = "Tank"
-)
-
-type Version string
-const (
-	The1081 Version = "10.8.1"
-)
 
 type specMode struct {
 	GameID            int64  `json:"gameId"`

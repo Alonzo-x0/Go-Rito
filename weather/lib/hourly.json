@@ -1,0 +1,196 @@
+[
+  {
+    "DateTime": "2020-07-06T09:00:00-04:00",
+    "EpochDateTime": 1594040400,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 74,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 2,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=9&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=9&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T10:00:00-04:00",
+    "EpochDateTime": 1594044000,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 78,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 2,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=10&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=10&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T11:00:00-04:00",
+    "EpochDateTime": 1594047600,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 81,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 1,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=11&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=11&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T12:00:00-04:00",
+    "EpochDateTime": 1594051200,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 84,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 1,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=12&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=12&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T13:00:00-04:00",
+    "EpochDateTime": 1594054800,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 87,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 4,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=13&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=13&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T14:00:00-04:00",
+    "EpochDateTime": 1594058400,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 90,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 43,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=14&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=14&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T15:00:00-04:00",
+    "EpochDateTime": 1594062000,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 92,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 47,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=15&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=15&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T16:00:00-04:00",
+    "EpochDateTime": 1594065600,
+    "WeatherIcon": 17,
+    "IconPhrase": "Partly sunny w/ t-storms",
+    "HasPrecipitation": true,
+    "PrecipitationType": "Rain",
+    "PrecipitationIntensity": "Moderate",
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 90,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 51,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=16&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=16&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T17:00:00-04:00",
+    "EpochDateTime": 1594069200,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 88,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 18,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=17&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=17&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T18:00:00-04:00",
+    "EpochDateTime": 1594072800,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 86,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 14,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=18&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=18&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T19:00:00-04:00",
+    "EpochDateTime": 1594076400,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 85,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 14,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=19&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=19&lang=en-us"
+  },
+  {
+    "DateTime": "2020-07-06T20:00:00-04:00",
+    "EpochDateTime": 1594080000,
+    "WeatherIcon": 2,
+    "IconPhrase": "Mostly sunny",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": {
+      "Value": 81,
+      "Unit": "F",
+      "UnitType": 18
+    },
+    "PrecipitationProbability": 14,
+    "MobileLink": "http://m.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=20&lang=en-us",
+    "Link": "http://www.accuweather.com/en/us/state-college-pa/16801/hourly-weather-forecast/335315?day=1&hbhhour=20&lang=en-us"
+  }
+]

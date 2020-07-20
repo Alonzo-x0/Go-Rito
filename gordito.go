@@ -9,13 +9,11 @@ import (
 	"os/signal"
 	"syscall"
 	boosted "./isHeBoosted/lib"
-	//weather "./weather/lib"
+	weather "./weather/lib"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"text/tabwriter"
-	"bytes"
 	"time"
-	"reflect"
+	//"reflect"
 )
 
 
@@ -39,8 +37,7 @@ func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 
 		if disect.Author.Bot == false {
 			message := disect.Content + " sent by @" + disect.Author.String() + " was deleted."
-			log.Println(disect.Content)
-			log.Println(message)
+			//log.Println(message)
 			s.ChannelMessageSend(m.ChannelID, message)
 		}
 	}
@@ -50,68 +47,103 @@ func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var b bytes.Buffer
-	w := tabwriter.NewWriter(&b, 1, 1, 1, ' ', 0)
+	var embedded discordgo.MessageEmbed
+	//log.Println(m.Content)
+	embedded.URL = "https://github.com/Alonzo-x0/Go-Rito"
+
 	
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
 		log.Fatal(err)
 	} 
 	key := os.Getenv("APIkey")
+	w := os.Getenv("WeatherKey")
 
 	if m.Author.ID == s.State.User.ID {
-		time.Sleep(3 * time.Minute)
-		s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
-		log.Println("deletion here")
+
 		return
 	}
 
-	var embedded discordgo.MessageEmbed
-	embedded.URL = "https://github.com/Alonzo-x0/Go-Rito"
+	if strings.HasPrefix(m.Content, "!conditions") {
+		s.ChannelMessageSend(m.ChannelID, "Hol' up")
+
+		args := strings.SplitAfter(m.Content, " ")
+
+		fmt.Println(args[0], args[1])
+		time.Sleep(4 * time.Second)
+		zipcode, err := weather.PostalKey(args[1], w)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		
+		message, err := weather.CurrConditions(zipcode, w)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, message)
+	}
 
 	killmepls := func(s *discordgo.Session, y *discordgo.GuildMembersChunk) {
+
 	count := 0
-	log.Println(y.Presences[0].Status)
+
 	for p, _ := range y.Presences{
 		if y.Presences[p].Status == "online" {
 			count++
 		}
 	}
-	log.Println(reflect.TypeOf(count))
+
 	time.Sleep(1 * time.Second)
-	testing := fmt.Sprintf("%i homies are online", count)
+	testing := strconv.Itoa(count) + " Homies are online"
 	
 	s.ChannelMessageSend(m.ChannelID, testing)
 	
-	log.Println(count, " homies are online")	
 	}
-	if strings.HasPrefix(m.Content, "!test") == true {
+
+	//!online
+	if strings.HasPrefix(m.Content, "!online") == true {
 		s.AddHandler(killmepls)
+
 		f := s.RequestGuildMembers(m.GuildID, "", 0, true)
 		
 		if f != nil {
-			log.Println(err)
+			//log.Println(err)
 			
 		}
 	}
 
-
+	//!time messageID
 	if strings.HasPrefix(m.Content, "!time") == true {
-		
-
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
-		log.Println(m.Content, "HERE")
+
+				
+
 		args := strings.SplitAfter(m.Content, " ")
-		t, _ := discordgo.SnowflakeTimestamp(args[1])
+		t, err := discordgo.SnowflakeTimestamp(args[1])
 		
-		t.String()
+		if err != nil {
+			//log.Println(err)
+			s.ChannelMessageSend(m.ChannelID, "Error in getting time stamp")
+			return
+		}
+
+
+		//t.String()
 		stamp := t.Format("2006-01-02 15:04:05")
 
 
-		mValue, _ := s.ChannelMessage(m.ChannelID, args[1])
+		mValue, err := s.ChannelMessage(m.ChannelID, args[1])
 
-		log.Println(mValue.Content)
-		time.Sleep(5 & time.Second)
+		if err != nil {
+			//log.Println(err)
+			s.ChannelMessageSend(m.ChannelID, "Unknown Message, unable to be parsed")
+			return
+		}
+
+		//log.Println(mValue.Content)
+		
 
 		embedded.Title = "Time Stamp"
 
@@ -123,7 +155,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		
 	}
 
-	//!search "booster" "boostee"
+	//!search "booster" "boostee" range
 	if strings.HasPrefix(m.Content, "!search") == true{
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
 		
@@ -138,6 +170,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		args = delete_empty(args)
 	
 
+
 		if len(args) == 4 {
 			index, err := strconv.Atoi(args[3])
 			if index == 0 {
@@ -145,19 +178,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			if err != nil {
 				log.Println(err)
+				return
 			}
-			
 
-			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[1], args[2], index, key))
+			message, err := boosted.UsrSearch(args[1], args[2], index, key)
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error raised, double check those arguments are valid buddy")
+			}
+			s.ChannelMessageSend(m.ChannelID, message)
 
-		}else if len(args) == 3 {
-			
-
-			s.ChannelMessageSend(m.ChannelID, boosted.UsrSearch(args[1], args[2], 50, key))
-		}else {
-
-			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
+		}else if len(args) != 4 { 
+			s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !search \"booster\" \"boostee\" range")
 		}
+
 	}
 	//!spect "player"
 	if strings.HasPrefix(m.Content, "!spect") == true{
@@ -173,21 +206,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			args[i] = strings.TrimLeft(args[i], " ")
 		}
 		args = delete_empty(args)
-
+		log.Println(len(args))
+		time.Sleep(2 * time.Second)
 		if len(args) == 2 {
-			log.Println(args)
-			x, y := boosted.SpectGame(args[1], key)
-			if y[0] != "" {
+			//log.Println(args)
+			teamA, teamB, err := boosted.SpectGame(args[1], key)
 
-				fmt.Fprintln(w,"```" + x[0]+ "\t\t\t\t" + y[0] + "\n" + x[1] + "\t" + y[1] + "\n" + x[2] + "\t" + y[2] + "\n" + x[3] + "\t" + y[3] + "\n" + x[4]  +"\t" + y[4] + "```")
-				w.Flush()
-				
-				log.Println(b.String)
-				s.ChannelMessageSend(m.ChannelID, b.String())
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error raised, double check those arguments are valid buddy")
+				log.Println(err)
+				return
+			}else if err == nil {
+				message := "```" + teamA[0]+ "\t\t\t\t" + teamB[0] + "\n" + teamA[1] + "\t" + teamB[1] + "\n" + teamA[2] + "\t" + teamB[2] + "\n" + teamA[3] + "\t" + teamB[3] + "\n" + teamA[4]  +"\t" + teamB[4] + "```"
+				s.ChannelMessageSend(m.ChannelID, message)
 			}
 
-		} else {
-			s.ChannelMessageSend(m.ChannelID, "Whoops, double check your request, something is amiss")
+		} else if len(args) != 2{
+			s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !spect \"player\"")
 
 			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 		}
@@ -207,7 +242,7 @@ func main() {
 
 	dg, err := discordgo.New("Bot " + discToken)
 	
-	log.Println(reflect.TypeOf(dg))
+	//log.Println(reflect.TypeOf(dg))
 	if err != nil {
 		fmt.Println(err)
 		return 
