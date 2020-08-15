@@ -10,6 +10,7 @@ import (
     "encoding/json"
     "time"
     "strconv"
+    "errors"
 )
 
 func urlRequest(url string) []byte{
@@ -29,17 +30,17 @@ func urlRequest(url string) []byte{
 //postalKey("zipcode")
 /* used to get the location key, necessary for accuweather endpoints*/
 func PostalKey(zip string, key string) (string, error) {
-    var postal Postal
-    var url = "http://dataservice.accuweather.com/locations/v1/postalcodes/search?apikey=" + key + "&q=" + zip + "&details=false"//%20HTTP/1.1"
-    fmt.Println(url)
-    err := json.Unmarshal(urlRequest(url), &postal)
-
-    if err != nil {
-        return "", err
-    }
+    //var postal Postal
+    //var url = "http://dataservice.accuweather.com/locations/v1/postalcodes/search?apikey=" + key + "&q=" + zip + "&details=false"//%20HTTP/1.1"
+    err := errors.New("")
+    //err := json.Unmarshal(urlRequest(url), &postal)
+//
+    //if err != nil {
+        //return "", err
+    //}
     //fmt.Println(postal[0].ParentCity.Key)
-    return postal[0].ParentCity.Key, err
-
+   // return postal[0].ParentCity.Key, err
+   return "335315", err
 }
 
 func CurrConditions(loKey string, key string) (string, error){
@@ -65,8 +66,9 @@ func CurrConditions(loKey string, key string) (string, error){
     if err != nil {
         return "", err
     }
+    x := fmt.Sprintf("%.1f", weather[0].Temperature.Imperial.Value)
 
-    s := fmt.Sprintf("%s %v", weather[0].WeatherText, weather[0].Temperature.Imperial.Value, "F")
+    s := weather[0].WeatherText + " " + x + "F"
     
     return s, err
 }

@@ -10,9 +10,13 @@ import (
 	"syscall"
 	boosted "./isHeBoosted/lib"
 	weather "./weather/lib"
+	database "./userdb/lib"
+	//foo "./youtube/lib"
+	//"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"time"
+	"database/sql"
 	//"reflect"
 )
 
@@ -41,8 +45,9 @@ func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 			s.ChannelMessageSend(m.ChannelID, message)
 		}
 	}
-	
 }
+	
+
 
 
 
@@ -51,38 +56,100 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//log.Println(m.Content)
 	embedded.URL = "https://github.com/Alonzo-x0/Go-Rito"
 
-	
-	err := godotenv.Load("killerkeys.env")
+	db, err := sql.Open("mysql", "killer:toor@tcp(127.0.0.1:3306)/discord")
+
 	if err != nil {
-		log.Fatal(err)
-	} 
-	key := os.Getenv("APIkey")
-	w := os.Getenv("WeatherKey")
+		log.Println(err)
+	}
 
 	if m.Author.ID == s.State.User.ID {
 
 		return
 	}
 
-	if strings.HasPrefix(m.Content, "!conditions") {
+
+	//Insert(db, "weather", "userid", "lkey", "157959951501885440", "335315")
+	if strings.HasPrefix(m.Content, "!set") {
+		
+
 		s.ChannelMessageSend(m.ChannelID, "Hol' up")
 
 		args := strings.SplitAfter(m.Content, " ")
 
-		fmt.Println(args[0], args[1])
-		time.Sleep(4 * time.Second)
-		zipcode, err := weather.PostalKey(args[1], w)
-		if err != nil {
-			fmt.Println(err)
-			return
+		//len = 2 for !set zipcode
+
+		if len(args) == 2 {
+			//convert zipcode from argument into lkey
+			if len(args[1]) != 5 {
+				s.ChannelMessageSend(m.ChannelID, "Hey baka, zipcodes are 5 digits!")
+				return
+			}
+
+			loKey, err := weather.PostalKey(args[1], WeatherKey)
+			//TODO: add if err 
+
+
+			err = database.Insert(db, "weather", "userid", "lkey", m.Author.ID, loKey)
+			if err != nil {
+				return
+			}
+	
+			err = database.DeleteDupes(db, "weather", "userid", "id")
+			if err != nil {
+				return
+			}
+			s.ChannelMessageSend(m.ChannelID, "Your location has been set!")
+		}else if len(args) != 2 {
+			s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !set zipcode")
 		}
-		
-		message, err := weather.CurrConditions(zipcode, w)
-		if err != nil {
-			fmt.Println(err)
-			return
+	}
+
+
+
+	if strings.HasPrefix(m.Content, "!conditions") {
+		s.ChannelMessageSend(m.ChannelID, "Hol' up")
+
+		//SelectRows(db *sql.DB, tarCol string, table string, desCol string, value string )
+		args := strings.SplitAfter(m.Content, " ")
+		log.Println(len(args))
+		if len(args) == 1 {
+
+			loKey, err := database.SelectRows(db, "lkey", "weather", "userid", m.Author.ID)
+
+			if err != nil {
+				log.Println(err)
+				return
+			}
+	
+			if loKey != 0 {
+				zip := strconv.Itoa(loKey)
+				message, err := weather.CurrConditions(zip, WeatherKey)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				s.ChannelMessageSend(m.ChannelID, message)
+			}
 		}
-		s.ChannelMessageSend(m.ChannelID, message)
+		if len(args) == 2 {
+			log.Println("1")
+			loKey, err := weather.PostalKey(args[1], WeatherKey)
+	
+			if err != nil {
+				fmt.Println(err)
+				
+			}
+			log.Println("2")
+			message, err := weather.CurrConditions(loKey, WeatherKey)
+			if err != nil {
+				fmt.Println(err)
+			}
+			log.Println("3")
+			log.Println(message)
+			s.ChannelMessageSend(m.ChannelID, message)
+		}else if len(args) != 1 && len(args) != 2 {
+			s.ChannelMessageSend(m.ChannelID, "Hey baka, this command takes 1 argument, your zipcode, or leave blank if you already set your zipcode with the !set xxxxx command!")
+		}
 	}
 
 	killmepls := func(s *discordgo.Session, y *discordgo.GuildMembersChunk) {
@@ -96,7 +163,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	time.Sleep(1 * time.Second)
-	testing := strconv.Itoa(count) + " Homies are online"
+	testing := strconv.Itoa(count) + " homies are online"
 	
 	s.ChannelMessageSend(m.ChannelID, testing)
 	
@@ -181,7 +248,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			}
 
-			message, err := boosted.UsrSearch(args[1], args[2], index, key)
+			message, err := boosted.UsrSearch(args[1], args[2], index, LeagueKey)
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Error raised, double check those arguments are valid buddy")
 			}
@@ -210,7 +277,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		time.Sleep(2 * time.Second)
 		if len(args) == 2 {
 			//log.Println(args)
-			teamA, teamB, err := boosted.SpectGame(args[1], key)
+			teamA, teamB, err := boosted.SpectGame(args[1], LeagueKey)
 
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Error raised, double check those arguments are valid buddy")
@@ -230,17 +297,33 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 	
+var (
+	DiscordKey string
+	LeagueKey string
+	WeatherKey string
+)
 
-
-
-func main() {
+func InitApp() (string, string, string) {
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
 		log.Fatal(err)
 	} 
-	discToken := os.Getenv("DisKey")
+	dkey := os.Getenv("DisKey")
+	rkey := os.Getenv("APIkey")
+	wkey := os.Getenv("WeatherKey")
+	return dkey, rkey, wkey
+}
 
-	dg, err := discordgo.New("Bot " + discToken)
+func init() {
+	DiscordKey, LeagueKey, WeatherKey = InitApp()
+}
+
+
+
+func main() {
+	
+	
+	dg, err := discordgo.New("Bot " + DiscordKey)
 	
 	//log.Println(reflect.TypeOf(dg))
 	if err != nil {
