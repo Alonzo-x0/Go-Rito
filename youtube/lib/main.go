@@ -60,27 +60,14 @@ func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var embedded discordgo.MessageEmbed
-	//log.Println(m.Content)
 	embedded.URL = "https://github.com/Alonzo-x0/Go-Rito"
-
 
 	if m.Author.ID == s.State.User.ID {
 
 		return
 	}
 
-	if strings.HasPrefix(m.Content, "!voice") {
-		voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		defer voiceConn.Close()
-		//PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=xQnIN9bW0og", make(chan bool))
-	
-	//log.Println(voiceConn)
-	}
-
+	test := make(chan bool)
 	if strings.HasPrefix(m.Content, "!1") {
 		voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
 		if err != nil {
@@ -129,65 +116,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
         log.Println(id, title)
 
-        test := make(chan bool)
+        
         go PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=YJVmu6yttiw", test)
-        time.Sleep(10 * time.Second)
-        test <- false
+        time.Sleep(35 * time.Second)
+        //test <- true
 
 
 	}
-	/*
-	if strings.HasPrefix(m.Content, "!2") {
-		voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
-		if err != nil {
-			log.Println(err)
-			
-		}
-		defer voiceConn.Close()
-
-		ctx := context.Background()
-		
-		var query []string
-		
-		service, err := youtube.NewService(ctx, option.WithAPIKey(GoogleKey))
-		
-
-		args := strings.SplitAfter(m.Content, "!2 ")
-		for x, y := range args {
-			log.Println(x, y)
-		}
-		if err != nil {
-			log.Println(err)
-			
-		}
-		
-		query = append(query, "snippet")
 	
-		call := service.Search.List(query).Q(args[0]).MaxResults(1)
-
-		response, err := call.Do()
-		if err != nil {
-			log.Println(err)
-			
-		}
-		//log.Println(response.Items)
-		videos := make(map[string]string)
-		
-
-        // Iterate through each item and add it to the correct list.
-        for _, item := range response.Items {
-                switch item.Id.Kind {
-                case "youtube#video":
-                        videos[item.Id.VideoId] = item.Snippet.Title
-                }
-        }
-        id, title := printIDs(videos)
-        s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
-        log.Println(id, title)
-        PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=dQw4w9WgXcQ", make(chan bool))
+	if strings.HasPrefix(m.Content, "!2") {
+		test <- true
 
 
-	}*/
+	}
 	}
 
 
