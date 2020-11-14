@@ -11,7 +11,7 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
-	"reflect"
+	//"reflect"
 	//"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -124,12 +124,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	}
 	
-	if strings.HasPrefix(m.Content, "!2") {
-		test <- true
+	if strings.HasPrefix(m.Content, "!stop") {
+		serverID := "690961298384486410"
+		voiceInstances[serverID].StopVideo()
 
 
 	}
 	}
+
 
 
 func printIDs(matches map[string]string) (string, string){
@@ -139,9 +141,16 @@ func printIDs(matches map[string]string) (string, string){
         return "", ""
 }
 	
-
+type VoiceInstance struct {
+	serverID     string
+	skip         bool
+	stop         bool
+	trackPlaying bool
+}
 	
-
+func (vi *VoiceInstance) StopVideo() {
+	vi.stop = true
+}
 
 func main() {
 
@@ -229,7 +238,7 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(reflect.TypeOf(youtubeOut))
+	log.Println("HERRE2")
 
 	err = youtubeDl.Start()
 	if err != nil {
@@ -238,7 +247,7 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 	}
 
 	ffmpegRun := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", strconv.Itoa(frameRate), "-ac", strconv.Itoa(channels), "pipe:1")
-
+	log.Println("HERRE3")
 	ffmpegRun.Stdin = youtubeOut
 	ffmpegRun.Stderr = os.Stderr
 
@@ -248,14 +257,14 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 		log.Println(err)
 		
 	}
-
+	
 	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 16384)
 
 	if err := ffmpegRun.Start(); err != nil {
 		log.Println(err)
 		
 	}
-
+	log.Println("HERRE5")
 
 	//go func() {
 		//log.Println("In goFunc")
@@ -279,21 +288,27 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 	send := make(chan []int16, 2)
 	defer close(send)
 
-
+	log.Println("HERRE4")
 	go func() {
 		SendPCM(v, send)
 		
 	}()
+	log.Println("HERRE4")
 	for {
 		audiobuf := make([]int16, frameSize*channels)
 		err = binary.Read(ffmpegbuf, binary.LittleEndian, &audiobuf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return
 			
 		}
 		if err != nil {
 			log.Println(err)
 			
 		}
+		//if voiceInstances.stop == true {
+			//ffmpegRun.Process.Kill()
+			//break
+		//}
 
 		select{
 		case send <- audiobuf:
@@ -432,6 +447,7 @@ var (
 	guildId    string
 	limitVids  int64
 	bitRate    int64
+	voiceInstances = map[string]*VoiceInstance{}
 )
 
 
