@@ -67,6 +67,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	serverID := "690961298384486410"
+
 	test := make(chan bool)
 	if strings.HasPrefix(m.Content, "!1") {
 		voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
@@ -116,16 +118,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
         log.Println(id, title)
 
+        vi := new(VoiceInstance)
+        voiceInstances[serverID] = vi
         
-        go PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=YJVmu6yttiw", test)
+        vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=YJVmu6yttiw", test)
         time.Sleep(35 * time.Second)
         //test <- true
 
 
 	}
 	
-	if strings.HasPrefix(m.Content, "!stop") {
-		serverID := "690961298384486410"
+	if strings.HasPrefix(m.Content, "!stop"){
+		log.Println(voiceInstances[serverID] != nil)
 		voiceInstances[serverID].StopVideo()
 
 
@@ -232,13 +236,12 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
 
 
 
-func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan bool) {
-	youtubeDl := exec.Command("youtube-dl", "--no-color", "--audio-format", "best", "--audio-format", "opus", filename, "-o", "-")
+func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string, closer <- chan bool) {
+	youtubeDl := exec.Command("youtube-dl", "--no-color", "--audio-format", "best", "--audio-format", "opus", link, "-o", "-")
 	youtubeOut, err := youtubeDl.StdoutPipe()
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("HERRE2")
 
 	err = youtubeDl.Start()
 	if err != nil {
@@ -247,7 +250,6 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 	}
 
 	ffmpegRun := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", strconv.Itoa(frameRate), "-ac", strconv.Itoa(channels), "pipe:1")
-	log.Println("HERRE3")
 	ffmpegRun.Stdin = youtubeOut
 	ffmpegRun.Stderr = os.Stderr
 
@@ -264,7 +266,6 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 		log.Println(err)
 		
 	}
-	log.Println("HERRE5")
 
 	//go func() {
 		//log.Println("In goFunc")
@@ -285,15 +286,14 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 		}
 	}()
 
-	send := make(chan []int16, 2)
-	defer close(send)
+	pcmChan := make(chan []int16, 2)
+	defer close(pcmChan)
 
-	log.Println("HERRE4")
 	go func() {
-		SendPCM(v, send)
+		SendPCM(v, pcmChan)
 		
 	}()
-	log.Println("HERRE4")
+	
 	for {
 		audiobuf := make([]int16, frameSize*channels)
 		err = binary.Read(ffmpegbuf, binary.LittleEndian, &audiobuf)
@@ -301,17 +301,18 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 			return
 			
 		}
+		log.Println("HERRE4")
 		if err != nil {
 			log.Println(err)
 			
 		}
-		//if voiceInstances.stop == true {
-			//ffmpegRun.Process.Kill()
-			//break
-		//}
+		if vi.stop == true {
+			ffmpegRun.Process.Kill()
+			break
+		}
 
 		select{
-		case send <- audiobuf:
+		case pcmChan <- audiobuf:
 		case <- closer:
 			err = youtubeDl.Process.Kill()
 			err = ffmpegRun.Process.Kill()
@@ -321,115 +322,6 @@ func PlayAudioFile(v *discordgo.VoiceConnection, filename string, closer <- chan
 	}
 }
 
-
-/*
-func SendPCM(v *discordgo.VoiceConnection, pcm <-chan []int16) {
-	if pcm == nil {
-		return
-	}
-	var err error
-
-	opusEncoder, err = gopus.NewEncoder(frameRate, channels, gopus.Audio)
-	if err != nil {
-		log.Println(err)
-	}
-
-	opusEncoder.SetBitrate(384000)
-
-	for {
-		recv, ok := <-pcm
-		if !ok {
-			fmt.Println("song ended, or error")
-			return
-		}
-
-		opus, err := opusEncoder.Encode(recv, frameSize, maxBytes)
-		if err != nil {
-			log.Println(err)
-		}
-
-		if v.OpusSend == nil {
-			fmt.Printf("Discordgo not ready for opus packets. %+v : %+v", v.Ready, v.OpusSend)
-			return
-		}
-		v.OpusSend <- opus
-	}
-}
-
-func PlayAudioFile(v *discordgo.VoiceConnection, filename string, stop <-chan bool) {
-	youtubeDl := exec.Command("youtube-dl", "--no-color", "--audio-format", "best", "--audio-format", "opus", filename, "-o", "-")
-	youtubeOut, err := youtubeDl.StdoutPipe()
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println(reflect.TypeOf(youtubeOut))
-
-
-	err = youtubeDl.Start()
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println("here")
-	ffmpegRun := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "s16le", "-ar", strconv.Itoa(frameRate), "-ac", strconv.Itoa(channels), "pipe:1")
-	log.Println("here2")
-	ffmpegRun.Stdin = youtubeOut
-	ffmpegRun.Stderr = os.Stderr
-
-	ffmpegout, err := ffmpegRun.StdoutPipe()
-	if err != nil {
-		log.Println(err)
-	}
-
-	ffmpegbuf := bufio.NewReaderSize(ffmpegout, 16384)
-
-	if err := ffmpegRun.Start(); err != nil {
-		log.Println(err)
-	}
-	
-	go func() {
-		<-stop
-		err = youtubeDl.Process.Kill()
-		err = ffmpegRun.Process.Kill()
-	}()
-
-	if err := v.Speaking(true); err != nil {
-		log.Println(err)
-	}
-
-	defer func() {
-		if err := v.Speaking(false); err != nil {
-			log.Println(err)
-		}
-	}()
-	
-	send := make(chan []int16, 2)
-	defer close(send)
-
-	closer := make(chan bool)
-	go func() {
-		SendPCM(v, send)
-		closer <- true
-	}()
-	log.Println("here3")
-	for {
-		audiobuf := make([]int16, frameSize*channels)
-		err = binary.Read(ffmpegbuf, binary.LittleEndian, &audiobuf)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return
-		}
-		if err != nil {
-			log.Println(err)
-		}
-
-		select {
-		case send <- audiobuf:
-		case <-closer:
-			return
-		}
-	}
-
-}
-*/
 var (
 	opusEncoder      *gopus.Encoder
 	onIndex          int
