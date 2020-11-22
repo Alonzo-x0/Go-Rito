@@ -301,7 +301,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 			return
 			
 		}
-		log.Println("HERRE4")
+		
 		if err != nil {
 			log.Println(err)
 			
