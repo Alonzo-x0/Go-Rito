@@ -11,7 +11,7 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
-	//"reflect"
+	"reflect"
 	//"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -27,6 +27,7 @@ const (
 	frameRate int = 48000               // audio sampling rate
 	frameSize int = 960                 // uint16 size of each audio frame
 	maxBytes  int = (frameSize * 2) * 2 // max size of opus data
+
 )
 
 
@@ -66,7 +67,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		return
 	}
-
+	voiceInstances[serverID] = vi
 	serverID := "690961298384486410"
 
 	test := make(chan bool)
@@ -108,7 +109,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		
 
         // Iterate through each item and add it to the correct list.
-        for _, item := range response.Items {
+        for x, item := range response.Items {
+        	log.Println(x, item, "\n")
                 switch item.Id.Kind {
                 case "youtube#video":
                         videos[item.Id.VideoId] = item.Snippet.Title
@@ -118,12 +120,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
         log.Println(id, title)
 
-        vi := new(VoiceInstance)
-        voiceInstances[serverID] = vi
+        log.Println(reflect.TypeOf(vi))
         
-        vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=YJVmu6yttiw", test)
+
+        log.Println(vi.queue)
+        
+        vi.queue = append(vi.queue, "https://www.youtube.com/watch?v=ypgw3NjJo0Y")
+        vi.queue = append(vi.queue, "https://www.youtube.com/watch?v=jB-zsM6aPPo")
+        log.Println(vi.queue)
+
+        vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=ypgw3NjJo0Y", test)
         time.Sleep(35 * time.Second)
-        //test <- true
 
 
 	}
@@ -150,6 +157,8 @@ type VoiceInstance struct {
 	skip         bool
 	stop         bool
 	trackPlaying bool
+	queue 		 []string
+	curPlay string
 }
 	
 func (vi *VoiceInstance) StopVideo() {
@@ -320,6 +329,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 			
 		}
 	}
+	fmt.Println("ENDED FRRRR")
 }
 
 var (
@@ -340,21 +350,24 @@ var (
 	limitVids  int64
 	bitRate    int64
 	voiceInstances = map[string]*VoiceInstance{}
+	vi 			*VoiceInstance
+
 )
 
 
-func InitApp() (string, string, string, string) {
+func InitApp() (*VoiceInstance, string, string, string, string) {
 	err := godotenv.Load("C:/Users/Alonzo/Programming/Go-Rito/isHeBoosted/killerkeys.env")
 	if err != nil {
 		log.Fatal(err)
 	} 
+	vi := new(VoiceInstance)
 	dkey := os.Getenv("DisKey")
 	rkey := os.Getenv("APIkey")
 	wkey := os.Getenv("WeatherKey")
 	gkey := os.Getenv("youtubeKey")
-	return dkey, rkey, wkey, gkey
+	return vi, dkey, rkey, wkey, gkey
 }
 
 func init() {
-	DiscordKey, LeagueKey, WeatherKey, GoogleKey = InitApp()
+	vi, DiscordKey, LeagueKey, WeatherKey, GoogleKey = InitApp()
 }
