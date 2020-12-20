@@ -7,3 +7,5 @@ playground.go
 *.png
 weather/lib/conditions.json
 weather/lib/post.json
+youtube/lib/__debug_bin
+youtube/lib/.vscode/launch.json
