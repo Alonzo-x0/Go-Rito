@@ -11,7 +11,7 @@ import (
 	"context"
 	"os/signal"
 	"syscall"
-	"reflect"
+	//"reflect"
 	//"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -67,12 +67,30 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		return
 	}
-	voiceInstances[serverID] = vi
+
 	serverID := "690961298384486410"
 
-	test := make(chan bool)
-	if strings.HasPrefix(m.Content, "!1") {
+	closer := make(chan bool)
+	
+	if strings.HasPrefix(m.Content, "!queue"){
+		arg := strings.Split(m.Content, " ")[1]
+		vi.queue = append(vi.queue, arg)
+		log.Println(vi.queue)
+		for x, y := range vi.queue {
+			log.Println(x, y)
+		}
+	}
+
+	if strings.HasPrefix(m.Content, "!clear"){
+		vi.queue = nil
+	}
+
+
+
+	voiceInstances[serverID] = vi
+	if strings.HasPrefix(m.Content, "!play") {
 		voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
+		vi.stop = false
 		if err != nil {
 			log.Println(err)
 			return
@@ -84,65 +102,62 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		var query []string
 		
 		service, err := youtube.NewService(ctx, option.WithAPIKey(GoogleKey))
-		
 
-		args := strings.SplitAfter(m.Content, "!1 ")
-		for x, y := range args {
-			log.Println(x, y)
-		}
 		if err != nil {
-			log.Println(err)
-			return
+				log.Println(err)
+				return
 		}
-		
-		query = append(query, "snippet")
+
+		message := strings.Split(m.Content, " ")
+
+
+		if len(message) == 1 && vi.trackPlaying == false && vi.queue != nil{
+        	vi.PlayAudioFile(voiceConn, vi.queue[0], closer)
+
+        }else if len(strings.Split(m.Content, " ")) >= 2 {
+
+
+        	query = append(query, "snippet")
+			args := strings.SplitAfter(m.Content, "!play")[1]
+			log.Println(args)
+			call := service.Search.List(query).Q(args).MaxResults(1)
 	
-		call := service.Search.List(query).Q(args[0]).MaxResults(1)
-
-		response, err := call.Do()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		//log.Println(response.Items)
-		videos := make(map[string]string)
-		
-
-        // Iterate through each item and add it to the correct list.
-        for x, item := range response.Items {
-        	log.Println(x, item, "\n")
-                switch item.Id.Kind {
-                case "youtube#video":
-                        videos[item.Id.VideoId] = item.Snippet.Title
-                }
+			response, err := call.Do()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			//log.Println(response.Items)
+			videos := make(map[string]string)
+			
+	
+        	// Iterate through each item and add it to the correct list.
+        	for x, item := range response.Items {
+        		log.Println(x, item, "\n")
+                	switch item.Id.Kind {
+                	case "youtube#video":
+                        	videos[item.Id.VideoId] = item.Snippet.Title
+                	}
+        	}
+        	id, title := printIDs(videos)
+        	s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
+        	vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=" + id, closer)
         }
-        id, title := printIDs(videos)
-        s.ChannelMessageSend(m.ChannelID, "Now loading! >>> " + title)
-        log.Println(id, title)
 
-        log.Println(reflect.TypeOf(vi))
-        
-
-        log.Println(vi.queue)
-        
-        vi.queue = append(vi.queue, "https://www.youtube.com/watch?v=ypgw3NjJo0Y")
-        vi.queue = append(vi.queue, "https://www.youtube.com/watch?v=jB-zsM6aPPo")
-        log.Println(vi.queue)
-
-        vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v=ypgw3NjJo0Y", test)
-        time.Sleep(35 * time.Second)
 
 
 	}
 	
-	if strings.HasPrefix(m.Content, "!stop"){
-		log.Println(voiceInstances[serverID] != nil)
+	//if strings.HasPrefix(m.Content, "!stop"){
+		//log.Println(voiceInstances[serverID] != nil)
+		//vi.stop = true
+//
+//
+	//}
+	if strings.HasPrefix(m.Content, "!stop") {
 		voiceInstances[serverID].StopVideo()
-
-
 	}
-	}
-
+}
 
 
 func printIDs(matches map[string]string) (string, string){
@@ -163,6 +178,7 @@ type VoiceInstance struct {
 	
 func (vi *VoiceInstance) StopVideo() {
 	vi.stop = true
+	vi.trackPlaying = false
 }
 
 func main() {
@@ -203,7 +219,8 @@ func main() {
 	//messageCreate()
 }
 
-func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
+func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16, ffmpegRun *exec.Cmd) {
+	vi.trackPlaying = true
 	if pcm == nil {
 		log.Println("PCM chan is nil")
 		
@@ -211,6 +228,8 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
 	}
 
 	opusEncoder, err := gopus.NewEncoder(frameRate, channels, gopus.Audio)
+
+	log.Println("track playing ", vi.trackPlaying)
 
 	if err != nil {
 		log.Println(err)
@@ -220,9 +239,19 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
 	opusEncoder.SetBitrate(384000)
 
 	for {
+		if vi.stop == true {
+			log.Println("here2")
+			ffmpegRun.Process.Kill()
+			//os.Exit(1)
+
+			
+			break
+		}
+
 		recv, ok := <-pcm
 		if !ok {
 			fmt.Println("song ended, or error kekw")
+			vi.trackPlaying = false
 			return
 			
 		}
@@ -234,6 +263,8 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
 			
 		}
 
+
+
 		if v.OpusSend == nil {
 			//try doing != nil later
 			log.Println("Discordgo not ready for opus packets. %+v : %+v", v.Ready, v.OpusSend)
@@ -241,6 +272,9 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <- chan []int16) {
 		}
 		v.OpusSend <- opus
 	}
+	vi.trackPlaying = false
+	log.Println("track playing ", vi.trackPlaying)
+
 }
 
 
@@ -276,13 +310,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 		
 	}
 
-	//go func() {
-		//log.Println("In goFunc")
-		//<- closer
-		//err = youtubeDl.Process.Kill()
-		//err = ffmpegRun.Process.Kill()
-	//}()
-	
+
 	if err := v.Speaking(true); err != nil {
 		log.Println(err)
 		
@@ -299,7 +327,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 	defer close(pcmChan)
 
 	go func() {
-		SendPCM(v, pcmChan)
+		SendPCM(v, pcmChan, ffmpegRun)
 		
 	}()
 	
@@ -315,21 +343,28 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 			log.Println(err)
 			
 		}
-		if vi.stop == true {
-			ffmpegRun.Process.Kill()
-			break
-		}
+		
 
 		select{
 		case pcmChan <- audiobuf:
 		case <- closer:
+			log.Println("here4")
 			err = youtubeDl.Process.Kill()
 			err = ffmpegRun.Process.Kill()
 			return
 			
 		}
+		
 	}
-	fmt.Println("ENDED FRRRR")
+
+	//if len(vi.queue) == 0 {
+		//copy(vi.queue[0:], vi.queue[0+1:])
+		//vi.queue[len(vi.queue)-1] = " "
+		//vi.queue = vi.queue[:len(vi.queue)-1]
+		//log.Println(vi.queue)
+
+
+	
 }
 
 var (
