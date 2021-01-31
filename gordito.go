@@ -266,16 +266,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				//tabwriter to maintain proper space formatting
 				buf := new(bytes.Buffer)
 				bufNew := new(bytes.Buffer)
-				w := tabwriter.NewWriter(buf, 5, 0, 3, '-', tabwriter.Debug)
-				b := tabwriter.NewWriter(bufNew, 5, 0, 3, '-', tabwriter.Debug)
+				w := tabwriter.NewWriter(buf, 5, 0, 3, ' ', tabwriter.Debug)
+				b := tabwriter.NewWriter(bufNew, 5, 0, 3, ' ', tabwriter.Debug)
 
 				//lCol is left header section, not the title
-				lCol.Name = "TEAM A"
+				lCol.Name = "BLUE"
 				lCol.Inline = true
 				field = append(field, lCol)
 
 				//rCol is right header section
-				rCol.Name = "TEAM B"
+				rCol.Name = "RED"
 				rCol.Inline = true
 				field = append(field, rCol)
 
@@ -293,8 +293,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				for playerA, championA := range teamB {
 					kA := keys[i]
 					vA := teamA[kA]
-					fmt.Fprintln(w, playerA+"\t"+championA) //+"\t"+vA+"\t"+kA)
-					fmt.Fprintln(b, kA+"\t"+vA)
+					fmt.Fprintln(w, playerA+"\t "+championA) //+"\t"+vA+"\t"+kA)
+					fmt.Fprintln(b, kA+"\t "+vA)
 					i++
 				}
 
