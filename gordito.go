@@ -140,10 +140,17 @@ func stampCheck(s *discordgo.Session, m *discordgo.MessageCreate, args []string)
 			s.ChannelMessageSend(m.ChannelID, "Unknown Message, unable to be parsed")
 			return
 		}
-
-		//log.Println(mValue.Content)
-
 		embedded.Title = mValue.Content
+		//log.Println(mValue.Content)
+		var field []*discordgo.MessageEmbedField
+		var kazoo *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
+		kazoo.Value = "test"
+		kazoo.Value = "testfawef"
+		kazoo.Name = "foo"
+		kazoo.Inline = true
+		field = append(field, kazoo)
+
+		embedded.Fields = field
 
 		message := fmt.Sprintf("was sent at %s EST", stamp)
 		embedded.Description = message
@@ -230,8 +237,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	//!spect "player"
 	if strings.HasPrefix(m.Content, "!spect") == true {
-		buf := new(bytes.Buffer)
-		w := tabwriter.NewWriter(buf, 5, 0, 3, ' ', tabwriter.Debug)
 
 		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 
@@ -251,24 +256,63 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				log.Println(err)
 				return
 			} else if err == nil || teamA != nil {
+				var embedded discordgo.MessageEmbed
+				var field []*discordgo.MessageEmbedField
+				var lCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
+				var rCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
+
+				embedded.Title = "MATCHUP"
+
+				//tabwriter to maintain proper space formatting
+				buf := new(bytes.Buffer)
+				bufNew := new(bytes.Buffer)
+				w := tabwriter.NewWriter(buf, 5, 0, 3, '-', tabwriter.Debug)
+				b := tabwriter.NewWriter(bufNew, 5, 0, 3, '-', tabwriter.Debug)
+
+				//lCol is left header section, not the title
+				lCol.Name = "TEAM A"
+				lCol.Inline = true
+				field = append(field, lCol)
+
+				//rCol is right header section
+				rCol.Name = "TEAM B"
+				rCol.Inline = true
+				field = append(field, rCol)
+
+				//since we got 2 maps, we gotta make one of them into a list to iterate thru both
 				keys := make([]string, len(teamA))
 				i := 0
 				for k := range teamA {
 					keys[i] = k
 					i++
 				}
+
+				embedded.Fields = field
+
 				i = 0
-				for k, z := range teamB {
+				for playerA, championA := range teamB {
 					kA := keys[i]
 					vA := teamA[kA]
-					//log.Println()
-					fmt.Fprintln(w, k+"\t"+z+"\t"+vA+"\t"+kA)
+					fmt.Fprintln(w, playerA+"\t"+championA) //+"\t"+vA+"\t"+kA)
+					fmt.Fprintln(b, kA+"\t"+vA)
 					i++
 				}
 
+				//flush writes to tabwriter "sealing the deal" to the io
+				//formats bytes from tabwriter
+				//TODO: fix these dumb ass variable names
 				w.Flush()
-				y := string(string(buf.Bytes()))
-				s.ChannelMessageSend(m.ChannelID, "```"+y+"```")
+				b.Flush()
+				y := string(buf.Bytes())
+				foo := string(bufNew.Bytes())
+				//keeps block formatting and preserves tabwriter format
+				lCol.Value = "```" + y + "```"
+				rCol.Value = "```" + foo + "```"
+
+				//
+
+				//s.ChannelMessageSend(m.ChannelID, y)
+				s.ChannelMessageSendEmbed(m.ChannelID, &embedded)
 
 			} else if len(args) != 2 {
 				s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !spect \"player\"")
@@ -280,11 +324,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 var (
+	//DiscordKey discord api key
 	DiscordKey string
-	LeagueKey  string
+	//LeagueKey riot api key
+	LeagueKey string
+	//WeatherKey accuweather api key
 	WeatherKey string
 )
 
+//InitApp initialize variables in global state
 func InitApp() (string, string, string) {
 	err := godotenv.Load("killerkeys.env")
 	if err != nil {
