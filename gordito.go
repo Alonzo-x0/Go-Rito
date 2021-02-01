@@ -256,63 +256,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				log.Println(err)
 				return
 			} else if err == nil || teamA != nil {
-				var embedded discordgo.MessageEmbed
-				var field []*discordgo.MessageEmbedField
-				var lCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
-				var rCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
-
-				embedded.Title = "MATCHUP"
-
-				//tabwriter to maintain proper space formatting
-				buf := new(bytes.Buffer)
-				bufNew := new(bytes.Buffer)
-				w := tabwriter.NewWriter(buf, 5, 0, 3, ' ', tabwriter.Debug)
-				b := tabwriter.NewWriter(bufNew, 5, 0, 3, ' ', tabwriter.Debug)
-
-				//lCol is left header section, not the title
-				lCol.Name = "BLUE"
-				lCol.Inline = true
-				field = append(field, lCol)
-
-				//rCol is right header section
-				rCol.Name = "RED"
-				rCol.Inline = true
-				field = append(field, rCol)
-
-				//since we got 2 maps, we gotta make one of them into a list to iterate thru both
-				keys := make([]string, len(teamA))
-				i := 0
-				for k := range teamA {
-					keys[i] = k
-					i++
-				}
-
-				embedded.Fields = field
-
-				i = 0
-				for playerA, championA := range teamB {
-					kA := keys[i]
-					vA := teamA[kA]
-					fmt.Fprintln(w, playerA+"\t "+championA) //+"\t"+vA+"\t"+kA)
-					fmt.Fprintln(b, kA+"\t "+vA)
-					i++
-				}
-
-				//flush writes to tabwriter "sealing the deal" to the io
-				//formats bytes from tabwriter
-				//TODO: fix these dumb ass variable names
-				w.Flush()
-				b.Flush()
-				y := string(buf.Bytes())
-				foo := string(bufNew.Bytes())
-				//keeps block formatting and preserves tabwriter format
-				lCol.Value = "```" + y + "```"
-				rCol.Value = "```" + foo + "```"
-
-				//
-
-				//s.ChannelMessageSend(m.ChannelID, y)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embedded)
+				s.ChannelMessageSendEmbed(m.ChannelID, embedMatchup(s, m, teamA, teamB))
 
 			} else if len(args) != 2 {
 				s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !spect \"player\"")
@@ -321,6 +265,69 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	}
+}
+
+func embedMatchup(s *discordgo.Session, m *discordgo.MessageCreate, blue map[string]string, red map[string]string) *discordgo.MessageEmbed {
+
+	var embedded discordgo.MessageEmbed
+	var field []*discordgo.MessageEmbedField
+	var lCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
+	var rCol *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
+
+	embedded.Title = "MATCHUP"
+
+	//tabwriter to maintain proper space formatting
+	buf := new(bytes.Buffer)
+	bufNew := new(bytes.Buffer)
+	w := tabwriter.NewWriter(buf, 5, 0, 3, ' ', tabwriter.Debug)
+	b := tabwriter.NewWriter(bufNew, 5, 0, 3, ' ', tabwriter.Debug)
+
+	//lCol is left header section, not the title
+	lCol.Name = "BLUE"
+	lCol.Inline = true
+	field = append(field, lCol)
+
+	//rCol is right header section
+	rCol.Name = "RED"
+	rCol.Inline = true
+	field = append(field, rCol)
+
+	//since we got 2 maps, we gotta make one of them into a list to iterate thru both
+	keys := make([]string, len(blue))
+	i := 0
+	for k := range blue {
+		keys[i] = k
+		i++
+	}
+
+	embedded.Fields = field
+
+	i = 0
+	//indexs through that list we made earlier, this allows us to iterate through both maps letting us get the variables on the same line.
+	for playerA, championA := range red {
+		kA := keys[i]
+		vA := blue[kA]
+		fmt.Fprintln(w, playerA+"\t "+championA) //+"\t"+vA+"\t"+kA)
+		fmt.Fprintln(b, kA+"\t "+vA)
+		i++
+	}
+
+	//flush writes to tabwriter "sealing the deal" to the io
+	//formats bytes from tabwriter
+	//TODO: fix these dumb ass variable names
+	w.Flush()
+	b.Flush()
+	y := string(buf.Bytes())
+	foo := string(bufNew.Bytes())
+	//keeps block formatting and preserves tabwriter format
+	lCol.Value = "```" + y + "```"
+	rCol.Value = "```" + foo + "```"
+
+	//
+
+	//s.ChannelMessageSend(m.ChannelID, y)
+	return &embedded
+	//s.ChannelMessageSendEmbed(m.ChannelID, &embedded)
 }
 
 var (
