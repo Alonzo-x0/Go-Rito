@@ -2,12 +2,10 @@ package lib
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -36,7 +34,7 @@ func SpectGame(username string, key string) (map[string]string, map[string]strin
 
 	var url = "https://na1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" + enID + "?api_key=" + key
 	var spect specMode
-	var whoops errSpec
+	//var whoops errSpec
 	//var teamT map[string]int
 	var teamA, teamB []string
 	var matchupA map[string]string
@@ -44,72 +42,64 @@ func SpectGame(username string, key string) (map[string]string, map[string]strin
 
 	matchupA = make(map[string]string)
 	matchupB = make(map[string]string)
-	//err = json.Unmarshal(urlRequest(url), &whoops)
+
+	err = json.Unmarshal(urlRequest(url), &spect)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if spect.GameMode == "" {
+		return nil, nil, err
+	}
+
+	for index, _ := range spect.Participants {
+		if spect.Participants[index].TeamID == 100 {
+			teamA = append(teamA, spect.Participants[index].SummonerName)
+		} else if spect.Participants[index].TeamID == 200 {
+			teamB = append(teamB, spect.Participants[index].SummonerName)
+		}
+	}
+	log.Println(url)
+	for index, names := range teamA {
+		if spect.Participants[index].SummonerName == names {
+			//fmt.Fprintln(w, spect.Participants[index].SummonerName+" \t "+champFind(spect.Participants[index].ChampionID))
+			matchupA[spect.Participants[index].SummonerName] = champFind(spect.Participants[index].ChampionID)
+		}
+	}
+
+	for index, names := range teamB {
+		if spect.Participants[index+5].SummonerName == names {
+
+			//fmt.Fprintln(w, spect.Participants[index+5].SummonerName+" \t "+champFind(spect.Participants[index+5].ChampionID))
+
+			matchupB[spect.Participants[index+5].SummonerName] = champFind(spect.Participants[index+5].ChampionID)
+		}
+	}
+
+	return matchupA, matchupB, err
+
+	//start
+	//jsonFile, err := os.Open("C:/Users/Alonzo/Programming/Go-Rito/sampleData.json")
 	//
 	//if err != nil {
 	//return nil, nil, err
-	//
 	//}
 
-	//if whoops.Status.StatusCode == 0 {
-	//start
-	jsonFile, err := os.Open("C:/Users/Alonzo/Programming/Go-Rito/sampleData.json")
+	//defer jsonFile.Close()
 
-	if err != nil {
-		return nil, nil, err
-	}
+	//byteValue, err := ioutil.ReadAll(jsonFile)
 
-	defer jsonFile.Close()
-
-	byteValue, err := ioutil.ReadAll(jsonFile)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	err = json.Unmarshal(byteValue, &spect)
+	//if err != nil {
+	//return nil, nil, err
+	//}
+	//
+	//err = json.Unmarshal(byteValue, &spect)
 	//end
 	//buf := new(bytes.Buffer)
 
 	//w := tabwriter.NewWriter(buf, 5, 0, 3, '-', 0)
 
-	if 1 == 1 {
-
-		if err != nil {
-			return nil, nil, err
-		}
-
-		for index, _ := range spect.Participants {
-			if spect.Participants[index].TeamID == 100 {
-				teamA = append(teamA, spect.Participants[index].SummonerName)
-			} else if spect.Participants[index].TeamID == 200 {
-				teamB = append(teamB, spect.Participants[index].SummonerName)
-			}
-		}
-		log.Println(url)
-		for index, names := range teamA {
-			if spect.Participants[index].SummonerName == names {
-				//fmt.Fprintln(w, spect.Participants[index].SummonerName+" \t "+champFind(spect.Participants[index].ChampionID))
-				matchupA[spect.Participants[index].SummonerName] = champFind(spect.Participants[index].ChampionID)
-			}
-		}
-
-		for index, names := range teamB {
-			if spect.Participants[index+5].SummonerName == names {
-
-				//fmt.Fprintln(w, spect.Participants[index+5].SummonerName+" \t "+champFind(spect.Participants[index+5].ChampionID))
-
-				matchupB[spect.Participants[index+5].SummonerName] = champFind(spect.Participants[index+5].ChampionID)
-			}
-		}
-
-		return matchupA, matchupB, err
-	} else if false { //else if whoops.Status.StatusCode != 0 {
-		err = errors.New(whoops.Status.Message)
-		return nil, nil, err
-	}
-
-	return nil, nil, err
 }
 
 func checkTeam(gameList int64, key string) ([]string, []string) {

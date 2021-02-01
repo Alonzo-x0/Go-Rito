@@ -251,18 +251,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			//log.Println(args)
 			teamA, teamB, err := boosted.SpectGame(args[1], LeagueKey)
 
-			if err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Error raised, double check those arguments are valid buddy")
+			if teamA == nil {
+				s.ChannelMessageSend(m.ChannelID, "Uh oh, cant seem to find that player in a current game")
 				log.Println(err)
 				return
-			} else if err == nil || teamA != nil {
+			} else if err == nil && teamA != nil {
 				s.ChannelMessageSendEmbed(m.ChannelID, embedMatchup(s, m, teamA, teamB))
-
-			} else if len(args) != 2 {
-				s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !spect \"player\"")
-
-				//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 			}
+
+		} else if len(args) != 2 {
+			s.ChannelMessageSend(m.ChannelID, "Hey baka, usage is !spect \"player\"")
+
+			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 		}
 	}
 }
