@@ -129,6 +129,7 @@ func stampCheck(s *discordgo.Session, m *discordgo.MessageCreate, args []string)
 
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error in getting info on that timestamp, whoops.")
+			log.Println(err)
 			return
 		}
 		stamp := t.Format("2006-01-02 15:04:05")
@@ -140,19 +141,13 @@ func stampCheck(s *discordgo.Session, m *discordgo.MessageCreate, args []string)
 			s.ChannelMessageSend(m.ChannelID, "Unknown Message, unable to be parsed")
 			return
 		}
-		embedded.Title = mValue.Content
+		embedded.Title = "Time Stamp"
 		//log.Println(mValue.Content)
 		var field []*discordgo.MessageEmbedField
-		var kazoo *discordgo.MessageEmbedField = new(discordgo.MessageEmbedField)
-		kazoo.Value = "test"
-		kazoo.Value = "testfawef"
-		kazoo.Name = "foo"
-		kazoo.Inline = true
-		field = append(field, kazoo)
 
 		embedded.Fields = field
 
-		message := fmt.Sprintf("was sent at %s EST", stamp)
+		message := fmt.Sprintf("\"%s\" was sent at %s EST", mValue.Content, stamp)
 		embedded.Description = message
 
 		s.ChannelMessageSendEmbed(m.ChannelID, &embedded)

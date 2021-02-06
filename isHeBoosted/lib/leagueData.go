@@ -12,7 +12,7 @@ import (
 )
 
 func champFind(ID int) string {
-	welcome, err := UnmarshalWelcome(urlRequest("http://ddragon.leagueoflegends.com/cdn/10.8.1/data/en_US/champion.json"))
+	welcome, err := UnmarshalWelcome(urlRequest("http://ddragon.leagueoflegends.com/cdn/11.3.1/data/en_US/champion.json"))
 	if err != nil {
 		return ""
 	}
@@ -45,10 +45,12 @@ func SpectGame(username string, key string) (map[string]string, map[string]strin
 
 	err = json.Unmarshal(urlRequest(url), &spect)
 
+	//error is for unmarshalling
 	if err != nil {
 		return nil, nil, err
 	}
 
+	//if it is no value that means cant find player in a game
 	if spect.GameMode == "" {
 		return nil, nil, err
 	}
@@ -61,44 +63,21 @@ func SpectGame(username string, key string) (map[string]string, map[string]strin
 		}
 	}
 	log.Println(url)
+	//teamA is blue side
 	for index, names := range teamA {
 		if spect.Participants[index].SummonerName == names {
-			//fmt.Fprintln(w, spect.Participants[index].SummonerName+" \t "+champFind(spect.Participants[index].ChampionID))
 			matchupA[spect.Participants[index].SummonerName] = champFind(spect.Participants[index].ChampionID)
 		}
 	}
 
+	//teamB is red side, which is why we need index +5
 	for index, names := range teamB {
 		if spect.Participants[index+5].SummonerName == names {
-
-			//fmt.Fprintln(w, spect.Participants[index+5].SummonerName+" \t "+champFind(spect.Participants[index+5].ChampionID))
-
 			matchupB[spect.Participants[index+5].SummonerName] = champFind(spect.Participants[index+5].ChampionID)
 		}
 	}
 
 	return matchupA, matchupB, err
-
-	//start
-	//jsonFile, err := os.Open("C:/Users/Alonzo/Programming/Go-Rito/sampleData.json")
-	//
-	//if err != nil {
-	//return nil, nil, err
-	//}
-
-	//defer jsonFile.Close()
-
-	//byteValue, err := ioutil.ReadAll(jsonFile)
-
-	//if err != nil {
-	//return nil, nil, err
-	//}
-	//
-	//err = json.Unmarshal(byteValue, &spect)
-	//end
-	//buf := new(bytes.Buffer)
-
-	//w := tabwriter.NewWriter(buf, 5, 0, 3, '-', 0)
 
 }
 
@@ -260,13 +239,13 @@ func getMatchID(enID string, key string) string {
 	if response["status"] != nil {
 
 		return response["status"].(map[string]interface{})["message"].(string)
-	} else {
-
-		return strconv.FormatFloat(response["gameId"].(float64), 'f', -1, 64)
 
 	}
+	return strconv.FormatFloat(response["gameId"].(float64), 'f', -1, 64)
+
 }
 
+//UsrSearch searches boostes history and checks for booster, returning how many games theyve played together
 func UsrSearch(booster string, boostee string, indexMax int, key string) (string, error) {
 	var url string
 	var matchinfo matchINFO
