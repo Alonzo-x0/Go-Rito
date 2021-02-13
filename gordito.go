@@ -14,8 +14,8 @@ import (
 	boosted "./isHeBoosted/lib"
 	database "./userdb/lib"
 	weather "./weather/lib"
+	tube "./youtube/lib"
 
-	//foo "./youtube/lib"
 	//"github.com/bwmarrin/dgvoice"
 	"database/sql"
 	"time"
@@ -185,6 +185,7 @@ func searchBoosted(s *discordgo.Session, m *discordgo.MessageCreate, args []stri
 	}
 }
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	var vi *VoiceInstance
 	//log.Println(m.Content)
 
 	db, err := sql.Open("mysql", "killer:toor@tcp(127.0.0.1:3306)/discord")
@@ -260,8 +261,27 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			//s.ChannelMessageSend(m.ChannelID, boosted.SpectGame(args[1], key)[1])
 		}
 	}
+
+	if strings.HasPrefix(m.Content, "!play") {
+		title := strings.SplitAfter(m.Content, "!play")[1]
+		tube.Zoop(s, m, title)
+	}
+
+	if strings.HasPrefix(m.Content, "!queue") {
+		args := strings.SplitAfter(m.Content, "!queue")[1]
+		vi.queue = append(vi.queue, args)
+		log.Println(vi.queue)
+		for x, y := range vi.queue {
+			log.Println(x, y)
+		}
+	}
+
+	if strings.HasPrefix(m.Content, "!clear") {
+		vi.queue = nil
+	}
 }
 
+//serverID := "690961298384486410"
 func embedMatchup(s *discordgo.Session, m *discordgo.MessageCreate, blue map[string]string, red map[string]string) *discordgo.MessageEmbed {
 
 	var embedded discordgo.MessageEmbed
@@ -382,4 +402,14 @@ func main() {
 
 	dg.Close()
 	//messageCreate()
+}
+
+//VoiceInstance is going to hold live values of current voicce instance by bot
+type VoiceInstance struct {
+	serverID     string
+	skip         bool
+	stop         bool
+	trackPlaying bool
+	queue        []string
+	curPlay      string
 }
