@@ -234,8 +234,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//!spect "player"
 	if strings.HasPrefix(m.Content, "!spect") == true {
 
-		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
-
 		args := strings.SplitAfter(m.Content, "\"")
 
 		for i := range args {
@@ -264,6 +262,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if strings.HasPrefix(m.Content, "!play") {
 		title := strings.SplitAfter(m.Content, "!play")[1]
+		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 		tube.Zoop(s, m, title)
 	}
 

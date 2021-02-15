@@ -31,7 +31,8 @@ const (
 
 )
 
-func delete_empty(s []string) []string {
+//deleteEmpty deletes empty elements in a slice
+func deleteEmpty(s []string) []string {
 	var r []string
 	for _, str := range s {
 		if str != "" {
@@ -41,11 +42,9 @@ func delete_empty(s []string) []string {
 	return r
 }
 
+//Zoop is the main function to play music to whatever channel the command was sent from
 func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
-	cID := m.ChannelID
-	gID := m.GuildID
-
-	voiceConn, err := s.ChannelVoiceJoin(gID, cID, true, false)
+	voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
 	vi.stop = false
 
 	if err != nil {
@@ -55,7 +54,9 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 
 	defer voiceConn.Close()
 	ctx := context.Background()
+
 	var query []string
+	closer := make(chan bool)
 
 	service, err := youtube.NewService(ctx, option.WithAPIKey(GoogleKey))
 
@@ -63,16 +64,19 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		log.Println(err)
 		return
 	}
+
 	message := strings.Split(m.Content, " ")
-	closer := make(chan bool)
 
 	if len(message) == 1 && vi.trackPlaying == false && vi.queue != nil {
 		vi.PlayAudioFile(voiceConn, vi.queue[0], closer)
+
 	} else if len(strings.Split(m.Content, " ")) >= 2 {
 
 		query = append(query, "snippet")
+		args := strings.SplitAfter(m.Content, "!play")[1]
+		log.Println(args)
+		call := service.Search.List(query).Q(args).MaxResults(1)
 
-		call := service.Search.List(query).Q(title).MaxResults(1)
 		response, err := call.Do()
 		if err != nil {
 			log.Println(err)
@@ -80,6 +84,7 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		}
 		//log.Println(response.Items)
 		videos := make(map[string]string)
+
 		// Iterate through each item and add it to the correct list.
 		for x, item := range response.Items {
 			log.Println(x, item, "\n")
@@ -92,7 +97,6 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		s.ChannelMessageSend(m.ChannelID, "Now loading! >>> "+title)
 		vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v="+id, closer)
 	}
-
 }
 
 //if strings.HasPrefix(m.Content, "!stop"){
@@ -113,6 +117,7 @@ func printIDs(matches map[string]string) (string, string) {
 	return "", ""
 }
 
+//VoiceInstance contains information regarding music and if its being played or not
 type VoiceInstance struct {
 	serverID     string
 	skip         bool
@@ -122,6 +127,7 @@ type VoiceInstance struct {
 	curPlay      string
 }
 
+//StopVideo stops the video
 func (vi *VoiceInstance) StopVideo() {
 	vi.stop = true
 	vi.trackPlaying = false
@@ -266,9 +272,10 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 }
 
 var (
-	opusEncoder    *gopus.Encoder
-	onIndex        int
-	onChannel      int
+	opusEncoder *gopus.Encoder
+	onIndex     int
+	onChannel   int
+	//DiscordKey is my discord api key
 	DiscordKey     string
 	LeagueKey      string
 	WeatherKey     string
@@ -279,13 +286,14 @@ var (
 	discordKey     string
 	chans          string
 	channel        string
-	guildId        string
+	guildID        string
 	limitVids      int64
 	bitRate        int64
 	voiceInstances = map[string]*VoiceInstance{}
 	vi             *VoiceInstance
 )
 
+//InitApp sets initial variable values like keys
 func InitApp() (*VoiceInstance, string, string, string, string) {
 	err := godotenv.Load("C:/Users/Alonzo/Programming/Go-Rito/isHeBoosted/killerkeys.env")
 	if err != nil {
