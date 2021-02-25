@@ -65,15 +65,11 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		return
 	}
 
-	message := strings.Split(m.Content, " ")
-
-	if len(message) == 1 && vi.trackPlaying == false && vi.queue != nil {
-		vi.PlayAudioFile(voiceConn, vi.queue[0], closer)
-
-	} else if len(strings.Split(m.Content, " ")) >= 2 {
+	args := strings.SplitAfter(m.Content, "!play")[1]
+	if vi.trackPlaying == false {
 
 		query = append(query, "snippet")
-		args := strings.SplitAfter(m.Content, "!play")[1]
+
 		log.Println(args)
 		call := service.Search.List(query).Q(args).MaxResults(1)
 
@@ -87,7 +83,7 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 
 		// Iterate through each item and add it to the correct list.
 		for x, item := range response.Items {
-			log.Println(x, item, "\n")
+			log.Println(x, item)
 			switch item.Id.Kind {
 			case "youtube#video":
 				videos[item.Id.VideoId] = item.Snippet.Title
@@ -133,6 +129,7 @@ func (vi *VoiceInstance) StopVideo() {
 	vi.trackPlaying = false
 }
 
+//SendPCM sends pcm to channel for a continuous stream
 func SendPCM(v *discordgo.VoiceConnection, pcm <-chan []int16, ffmpegRun *exec.Cmd) {
 	vi.trackPlaying = true
 	if pcm == nil {
@@ -187,6 +184,7 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <-chan []int16, ffmpegRun *exec.C
 
 }
 
+//PlayAudioFile plays audio search by LINK url
 func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string, closer <-chan bool) {
 	youtubeDl := exec.Command("youtube-dl", "--no-color", "--audio-format", "best", "--audio-format", "opus", link, "-o", "-")
 	youtubeOut, err := youtubeDl.StdoutPipe()
@@ -242,6 +240,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 		audiobuf := make([]int16, frameSize*channels)
 		err = binary.Read(ffmpegbuf, binary.LittleEndian, &audiobuf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			log.Println("EOFOMEGGAAA")
 			return
 
 		}
@@ -276,8 +275,10 @@ var (
 	onIndex     int
 	onChannel   int
 	//DiscordKey is my discord api key
-	DiscordKey     string
-	LeagueKey      string
+	DiscordKey string
+	//LeagueKey is riotAPI key
+	LeagueKey string
+	//WeatherKey is accuweather api key
 	WeatherKey     string
 	GoogleKey      string
 	client         *discordgo.Session

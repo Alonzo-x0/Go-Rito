@@ -185,9 +185,8 @@ func searchBoosted(s *discordgo.Session, m *discordgo.MessageCreate, args []stri
 	}
 }
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var vi *VoiceInstance
 	//log.Println(m.Content)
-
+	voiceInstances[m.GuildID] = vi
 	db, err := sql.Open("mysql", "killer:toor@tcp(127.0.0.1:3306)/discord")
 
 	if err != nil {
@@ -261,18 +260,25 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.HasPrefix(m.Content, "!play") {
-		title := strings.SplitAfter(m.Content, "!play")[1]
 		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
-		tube.Zoop(s, m, title)
+		log.Println(len(vi.queue))
+		if vi.queue != nil {
+			tube.Zoop(s, m, vi.queue[0])
+		} else if vi.queue == nil {
+			title := strings.SplitAfter(m.Content, "!play")[1]
+			tube.Zoop(s, m, title)
+		}
 	}
 
 	if strings.HasPrefix(m.Content, "!queue") {
+		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 		args := strings.SplitAfter(m.Content, "!queue")[1]
 		vi.queue = append(vi.queue, args)
-		log.Println(vi.queue)
-		for x, y := range vi.queue {
-			log.Println(x, y)
-		}
+		s.ChannelMessageSend(m.ChannelID, "Queued up!")
+	}
+
+	if strings.HasPrefix(m.Content, "!stop") {
+		voiceInstances[m.GuildID].StopAudio()
 	}
 
 	if strings.HasPrefix(m.Content, "!clear") {
@@ -344,6 +350,13 @@ func embedMatchup(s *discordgo.Session, m *discordgo.MessageCreate, blue map[str
 	//s.ChannelMessageSendEmbed(m.ChannelID, &embedded)
 }
 
+//StopAudio stops audio playing in the server
+func (vi *VoiceInstance) StopAudio() {
+	vi.stop = true
+	vi.trackPlaying = false
+	vi.stop = false
+}
+
 var (
 	//DiscordKey discord api key
 	DiscordKey string
@@ -351,22 +364,31 @@ var (
 	LeagueKey string
 	//WeatherKey accuweather api key
 	WeatherKey string
+	//vi creates a voice instance global instance
+	vi *VoiceInstance
+	//GoogleKey is for using youtube api
+	GoogleKey string
+	//voiceInstances is a map of instances
+	voiceInstances = map[string]*VoiceInstance{}
 )
 
 //InitApp initialize variables in global state
-func InitApp() (string, string, string) {
-	err := godotenv.Load("killerkeys.env")
+func InitApp() (*VoiceInstance, string, string, string, string) {
+	err := godotenv.Load("C:/Users/Alonzo/Programming/Go-Rito/isHeBoosted/killerkeys.env")
 	if err != nil {
 		log.Fatal(err)
 	}
+	var vi *VoiceInstance = new(VoiceInstance)
 	dkey := os.Getenv("DisKey")
 	rkey := os.Getenv("APIkey")
 	wkey := os.Getenv("WeatherKey")
-	return dkey, rkey, wkey
+	gkey := os.Getenv("youtubeKey")
+	return vi, dkey, rkey, wkey, gkey
 }
 
 func init() {
-	DiscordKey, LeagueKey, WeatherKey = InitApp()
+	vi, DiscordKey, LeagueKey, WeatherKey, GoogleKey = InitApp()
+
 }
 
 func main() {
