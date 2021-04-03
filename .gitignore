@@ -9,3 +9,4 @@ weather/lib/conditions.json
 weather/lib/post.json
 youtube/lib/__debug_bin
 youtube/lib/.vscode/launch.json
+youtube/lib/tubePlayer_test.go

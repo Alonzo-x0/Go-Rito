@@ -7,8 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
+	//"strings"
 
+	//"golang.org/x/text/cases"
 	"google.golang.org/api/option"
 
 	//"reflect"
@@ -47,8 +48,7 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 	voiceConn, err := s.ChannelVoiceJoin("690961298384486410", "690961298892259421", true, false)
 	vi.stop = false
 
-	if err != nil {
-		log.Println(err)
+	if err != nil && vi.trackPlaying != false {
 		return
 	}
 
@@ -65,13 +65,12 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		return
 	}
 
-	args := strings.SplitAfter(m.Content, "!play")[1]
 	if vi.trackPlaying == false {
 
 		query = append(query, "snippet")
 
-		log.Println(args)
-		call := service.Search.List(query).Q(args).MaxResults(1)
+		log.Println(title)
+		call := service.Search.List(query).Q(title).MaxResults(1)
 
 		response, err := call.Do()
 		if err != nil {
@@ -82,8 +81,8 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		videos := make(map[string]string)
 
 		// Iterate through each item and add it to the correct list.
-		for x, item := range response.Items {
-			log.Println(x, item)
+		for _, item := range response.Items {
+			//log.Println(x, item)
 			switch item.Id.Kind {
 			case "youtube#video":
 				videos[item.Id.VideoId] = item.Snippet.Title
@@ -91,7 +90,17 @@ func Zoop(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
 		}
 		id, title := printIDs(videos)
 		s.ChannelMessageSend(m.ChannelID, "Now loading! >>> "+title)
-		vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v="+id, closer)
+		//TODO FUCK WITH PLAYAUDIOFILE TO PROPERLY NOTIFY AND STOP STREAM
+		retard := vi.PlayAudioFile(voiceConn, "https://www.youtube.com/watch?v="+id, closer)
+		log.Println("TRACK PLAYING: ", vi.trackPlaying)
+		if retard == "" {
+			vi.StopVideo()
+			err := voiceConn.Disconnect()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 	}
 }
 
@@ -174,7 +183,7 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <-chan []int16, ffmpegRun *exec.C
 
 		if v.OpusSend == nil {
 			//try doing != nil later
-			log.Println("Discordgo not ready for opus packets. %+v : %+v", v.Ready, v.OpusSend)
+			fmt.Printf("Discordgo not ready for opus packets. %v : %v", v.Ready, v.OpusSend)
 
 		}
 		v.OpusSend <- opus
@@ -185,7 +194,7 @@ func SendPCM(v *discordgo.VoiceConnection, pcm <-chan []int16, ffmpegRun *exec.C
 }
 
 //PlayAudioFile plays audio search by LINK url
-func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string, closer <-chan bool) {
+func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string, closer <-chan bool) string {
 	youtubeDl := exec.Command("youtube-dl", "--no-color", "--audio-format", "best", "--audio-format", "opus", link, "-o", "-")
 	youtubeOut, err := youtubeDl.StdoutPipe()
 	if err != nil {
@@ -241,7 +250,9 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 		err = binary.Read(ffmpegbuf, binary.LittleEndian, &audiobuf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			log.Println("EOFOMEGGAAA")
-			return
+			vi.trackPlaying = false
+
+			return ""
 
 		}
 
@@ -256,7 +267,7 @@ func (vi *VoiceInstance) PlayAudioFile(v *discordgo.VoiceConnection, link string
 			log.Println("here4")
 			err = youtubeDl.Process.Kill()
 			err = ffmpegRun.Process.Kill()
-			return
+			return "ERR"
 
 		}
 
@@ -279,7 +290,8 @@ var (
 	//LeagueKey is riotAPI key
 	LeagueKey string
 	//WeatherKey is accuweather api key
-	WeatherKey     string
+	WeatherKey string
+	//GoogleKey is google api key for youtube lookups
 	GoogleKey      string
 	client         *discordgo.Session
 	vconn          *discordgo.VoiceConnection

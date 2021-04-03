@@ -261,12 +261,48 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if strings.HasPrefix(m.Content, "!play") {
 		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
-		log.Println(len(vi.queue))
-		if vi.queue != nil {
-			tube.Zoop(s, m, vi.queue[0])
-		} else if vi.queue == nil {
-			title := strings.SplitAfter(m.Content, "!play")[1]
-			tube.Zoop(s, m, title)
+
+		//if anything exists after !play is typed, itll save it as a arg
+		args := strings.SplitAfter(m.Content, "!play")[1]
+
+		if vi.trackPlaying {
+			//maybe add currPlay on channelmessagesend below
+			s.ChannelMessageSend(m.ChannelID, "A song is currently playing!")
+			return
+
+		} else if vi.trackPlaying == false {
+			//find a way to iterate thru vi.queue
+			//title := strings.SplitAfter(m.Content, "!play")[1]
+			log.Println(len(vi.queue))
+
+			//if nothing is in queue, play the title after !play command
+			if len(vi.queue) == 0 {
+				tube.Zoop(s, m, args)
+				return
+				//if vi queue isnt empty, play it before anything else
+			} else if len(vi.queue) != 0 {
+				for _, song := range vi.queue {
+
+					tube.Zoop(s, m, song)
+					//queuePlay(s, m, title)
+
+				}
+			}
+			//now that everything that could be played, is played, play whatever was in the !play command
+			if args != "" {
+				tube.Zoop(s, m, args)
+				return
+			}
+		}
+	}
+
+	if strings.HasPrefix(m.Content, "!test") {
+		x := len(vi.queue)
+		for i := 0; i < x; i++ {
+			s.ChannelMessageSend(m.ChannelID, vi.queue[i])
+			tube.Zoop(s, m, vi.queue[i])
+			//log.Println(vi.queue[i])
+
 		}
 	}
 
@@ -274,6 +310,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "Hol' up, Sir.")
 		args := strings.SplitAfter(m.Content, "!queue")[1]
 		vi.queue = append(vi.queue, args)
+		log.Println(vi.queue)
 		s.ChannelMessageSend(m.ChannelID, "Queued up!")
 	}
 
@@ -283,6 +320,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if strings.HasPrefix(m.Content, "!clear") {
 		vi.queue = nil
+	}
+}
+
+func queuePlay(s *discordgo.Session, m *discordgo.MessageCreate, title string) {
+	log.Println(len(""))
+	if len(title) > len("") {
+		tube.Zoop(s, m, title)
+	} else if len(title) <= len("") {
+		for index, song := range vi.queue {
+			log.Println(index, song)
+		}
 	}
 }
 
